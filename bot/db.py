@@ -39,8 +39,7 @@ class Database:
         self.conn.close()
 
     def _migrate(self) -> None:
-        self.conn.executescript(
-            """
+        self.conn.executescript("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id    INTEGER PRIMARY KEY,
                 lang       TEXT NOT NULL,
@@ -79,8 +78,7 @@ class Database:
                 charge_id  TEXT,
                 created_at TEXT NOT NULL
             );
-            """
-        )
+            """)
         self.conn.commit()
 
     # --- users -----------------------------------------------------------
