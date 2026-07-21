@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    # Persist the SQLite database outside the container.
+    volumes:
+      - tarot-data:/data
+    environment:
+      DB_PATH: /data/tarot.db
+
+volumes:
+  tarot-data:

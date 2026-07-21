@@ -1,0 +1,29 @@
+# Fly.io deployment for the Tarot Thoth bot.
+#
+# One long-lived process from the Dockerfile: aiogram long-polling. There is no
+# inbound HTTP (the bot only calls out to Telegram and the Claude API), so this
+# app has no [http_service] and exposes no port. The machine must stay up for
+# the polling loop; Fly keeps a deployed machine running by default. SQLite
+# lives on a persistent volume mounted at /data.
+#
+# Secrets (NOT in this file) — set once with:
+#   flyctl secrets set BOT_TOKEN=... ANTHROPIC_API_KEY=... ADMIN_IDS=273688933
+
+app = "tarot-thoth-bot"
+primary_region = "fra"   # Frankfurt (closest large EU region); change if you prefer
+
+[build]
+
+[env]
+  TZ = "Europe/Kyiv"
+  DB_PATH = "/data/tarot.db"
+  DEFAULT_LANG = "ru"
+  CLAUDE_MODEL = "claude-opus-4-8"
+
+[mounts]
+  source = "tarot_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

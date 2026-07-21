@@ -1,0 +1,19 @@
+# Keep the build context small — the image needs bot/, assets/, main.py, requirements.
+.git/
+.venv/
+venv/
+tests/
+tools/
+docs/
+.github/
+__pycache__/
+*.pyc
+*.db
+*.sqlite*
+.env
+.ruff_cache/
+.pytest_cache/
+README.md
+CLAUDE.md
+NOTICE.md
+docker-compose.yml
