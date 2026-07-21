@@ -21,6 +21,7 @@ jobs:
         run: |
           flyctl ssh console --app tarot-thoth-bot -C "sh -lc 'echo ==PS==; ps aux; echo ==ENV==; env | grep -E \"ANTHROPIC_API_KEY|BOT_TOKEN|DB_PATH|TZ|CLAUDE_MODEL|DEFAULT_LANG\" | sed \"s/\\(=\\).*/=<set>/\"; echo ==DATA==; ls -la /data'" || true
 
-      - name: Run bot directly for 15s to surface errors (SSH)
+      - name: Drive /start through the real dispatcher inside the machine (SSH)
         run: |
-          flyctl ssh console --app tarot-thoth-bot -C "sh -lc 'cd /app && timeout 15 python main.py 2>&1; echo EXIT=\$?'" 2>&1 | head -120 || true
+          B64=$(base64 -w0 tools/diag_feed.py)
+          flyctl ssh console --app tarot-thoth-bot -C "sh -lc \"cd /app && echo $B64 | base64 -d | python -\"" 2>&1 | head -120 || true
