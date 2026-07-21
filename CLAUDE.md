@@ -69,6 +69,13 @@ python tools/generate_cards.py  # regenerate the 78 card images
   thin layer (`service.py`, handlers). Keep `db.py` methods sync and testable;
   never `await` them directly — wrap at the call site so the event loop stays
   free.
+- **The SQLite connection is opened `check_same_thread=False` and guarded by a
+  `threading.Lock`** (`db.Database`). This is mandatory, not optional: because
+  handlers reach the connection from `asyncio.to_thread` worker threads (not the
+  thread that opened it), the default `check_same_thread=True` makes every DB
+  call raise `sqlite3.ProgrammingError` and the bot silently stops replying. The
+  lock serializes access across those threads. `test_usable_from_another_thread`
+  guards this — a same-thread-only test suite will NOT catch a regression here.
 - **Claude is called without extended thinking** (Opus 4.8 runs without thinking
   when `thinking` is omitted). The system prompt tells it to answer directly, no
   thinking aloud — because with thinking off Opus 4.8 can otherwise leak
