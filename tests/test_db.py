@@ -66,3 +66,24 @@ def test_stats_and_purchases(db):
     db.log_purchase(user_id=1, product="extra_5", stars=5, charge_id="c2")
     s = db.stats()
     assert s == {"users": 1, "spreads": 1, "purchases": 2, "stars": 6}
+
+
+def test_usable_from_another_thread(db):
+    # The async layer calls db methods from asyncio.to_thread worker threads,
+    # not the thread that opened the connection. Without check_same_thread=False
+    # this raises sqlite3.ProgrammingError and every handler silently fails.
+    import threading
+
+    result: dict[str, object] = {}
+
+    def worker():
+        try:
+            result["lang"] = db.get_or_create_user(99, "en")
+        except Exception as e:  # noqa: BLE001
+            result["error"] = e
+
+    t = threading.Thread(target=worker)
+    t.start()
+    t.join()
+    assert result.get("error") is None, result.get("error")
+    assert result["lang"] == "en"

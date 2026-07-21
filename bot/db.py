@@ -12,6 +12,7 @@ stored interpretation instead of drawing or charging twice.
 from __future__ import annotations
 
 import sqlite3
+import threading
 from datetime import UTC, datetime
 
 
@@ -29,14 +30,20 @@ def split_cards(raw: str) -> list[str]:
 
 class Database:
     def __init__(self, path: str):
-        self.conn = sqlite3.connect(path)
+        # check_same_thread=False: the async layer calls these methods from
+        # asyncio.to_thread worker threads, not the thread that opened the
+        # connection. A single Lock serializes all access so the shared
+        # connection is used safely across those threads.
+        self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
+        self._lock = threading.Lock()
         self._migrate()
 
     def close(self) -> None:
-        self.conn.close()
+        with self._lock:
+            self.conn.close()
 
     def _migrate(self) -> None:
         self.conn.executescript("""
@@ -84,23 +91,26 @@ class Database:
     # --- users -----------------------------------------------------------
 
     def get_or_create_user(self, user_id: int, default_lang: str) -> str:
-        row = self.conn.execute("SELECT lang FROM users WHERE user_id=?", (user_id,)).fetchone()
-        if row:
-            return row["lang"]
-        self.conn.execute(
-            "INSERT INTO users(user_id, lang, created_at) VALUES(?,?,?)",
-            (user_id, default_lang, _now()),
-        )
-        self.conn.commit()
-        return default_lang
+        with self._lock:
+            row = self.conn.execute("SELECT lang FROM users WHERE user_id=?", (user_id,)).fetchone()
+            if row:
+                return row["lang"]
+            self.conn.execute(
+                "INSERT INTO users(user_id, lang, created_at) VALUES(?,?,?)",
+                (user_id, default_lang, _now()),
+            )
+            self.conn.commit()
+            return default_lang
 
     def get_lang(self, user_id: int) -> str | None:
-        row = self.conn.execute("SELECT lang FROM users WHERE user_id=?", (user_id,)).fetchone()
-        return row["lang"] if row else None
+        with self._lock:
+            row = self.conn.execute("SELECT lang FROM users WHERE user_id=?", (user_id,)).fetchone()
+            return row["lang"] if row else None
 
     def set_lang(self, user_id: int, lang: str) -> None:
-        self.conn.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))
+            self.conn.commit()
 
     # --- spreads ---------------------------------------------------------
 
@@ -119,79 +129,92 @@ class Database:
         Concurrent-safe via the UNIQUE(scope_key) constraint and INSERT OR
         IGNORE: two racing requests can't create two spreads for the same key.
         """
-        self.conn.execute(
-            """
-            INSERT OR IGNORE INTO spreads
-                (user_id, day, kind, scope_key, situation, card_ids, created_at)
-            VALUES (?,?,?,?,?,?,?)
-            """,
-            (user_id, day, kind, scope_key, situation, join_cards(card_ids), _now()),
-        )
-        self.conn.commit()
-        return self.conn.execute("SELECT * FROM spreads WHERE scope_key=?", (scope_key,)).fetchone()
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT OR IGNORE INTO spreads
+                    (user_id, day, kind, scope_key, situation, card_ids, created_at)
+                VALUES (?,?,?,?,?,?,?)
+                """,
+                (user_id, day, kind, scope_key, situation, join_cards(card_ids), _now()),
+            )
+            self.conn.commit()
+            return self.conn.execute(
+                "SELECT * FROM spreads WHERE scope_key=?", (scope_key,)
+            ).fetchone()
 
     def get_spread(self, spread_id: int) -> sqlite3.Row | None:
-        return self.conn.execute("SELECT * FROM spreads WHERE id=?", (spread_id,)).fetchone()
+        with self._lock:
+            return self.conn.execute("SELECT * FROM spreads WHERE id=?", (spread_id,)).fetchone()
 
     def get_last_spread(self, user_id: int) -> sqlite3.Row | None:
-        return self.conn.execute(
-            "SELECT * FROM spreads WHERE user_id=? ORDER BY id DESC LIMIT 1",
-            (user_id,),
-        ).fetchone()
+        with self._lock:
+            return self.conn.execute(
+                "SELECT * FROM spreads WHERE user_id=? ORDER BY id DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
 
     def set_interpretation(self, spread_id: int, text: str) -> None:
-        self.conn.execute("UPDATE spreads SET interpretation=? WHERE id=?", (text, spread_id))
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute("UPDATE spreads SET interpretation=? WHERE id=?", (text, spread_id))
+            self.conn.commit()
 
     def set_future(self, spread_id: int, text: str) -> None:
-        self.conn.execute("UPDATE spreads SET future_text=? WHERE id=?", (text, spread_id))
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute("UPDATE spreads SET future_text=? WHERE id=?", (text, spread_id))
+            self.conn.commit()
 
     # --- extra draws -----------------------------------------------------
 
     def get_or_create_extra(
         self, *, spread_id: int, count: int, card_ids: list[str]
     ) -> sqlite3.Row:
-        self.conn.execute(
-            """
-            INSERT OR IGNORE INTO extra_draws (spread_id, count, card_ids, created_at)
-            VALUES (?,?,?,?)
-            """,
-            (spread_id, count, join_cards(card_ids), _now()),
-        )
-        self.conn.commit()
-        return self.conn.execute(
-            "SELECT * FROM extra_draws WHERE spread_id=? AND count=?",
-            (spread_id, count),
-        ).fetchone()
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT OR IGNORE INTO extra_draws (spread_id, count, card_ids, created_at)
+                VALUES (?,?,?,?)
+                """,
+                (spread_id, count, join_cards(card_ids), _now()),
+            )
+            self.conn.commit()
+            return self.conn.execute(
+                "SELECT * FROM extra_draws WHERE spread_id=? AND count=?",
+                (spread_id, count),
+            ).fetchone()
 
     def set_extra_interpretation(self, extra_id: int, text: str) -> None:
-        self.conn.execute("UPDATE extra_draws SET interpretation=? WHERE id=?", (text, extra_id))
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                "UPDATE extra_draws SET interpretation=? WHERE id=?", (text, extra_id)
+            )
+            self.conn.commit()
 
     # --- purchases -------------------------------------------------------
 
     def log_purchase(
         self, *, user_id: int, product: str, stars: int, charge_id: str | None
     ) -> None:
-        self.conn.execute(
-            """
-            INSERT INTO purchases(user_id, product, stars, charge_id, created_at)
-            VALUES (?,?,?,?,?)
-            """,
-            (user_id, product, stars, charge_id, _now()),
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO purchases(user_id, product, stars, charge_id, created_at)
+                VALUES (?,?,?,?,?)
+                """,
+                (user_id, product, stars, charge_id, _now()),
+            )
+            self.conn.commit()
 
     def stats(self) -> dict[str, int]:
-        c = self.conn
-        users = c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-        spreads = c.execute("SELECT COUNT(*) FROM spreads").fetchone()[0]
-        purchases = c.execute("SELECT COUNT(*) FROM purchases").fetchone()[0]
-        stars = c.execute("SELECT COALESCE(SUM(stars),0) FROM purchases").fetchone()[0]
-        return {
-            "users": users,
-            "spreads": spreads,
-            "purchases": purchases,
-            "stars": stars,
-        }
+        with self._lock:
+            c = self.conn
+            users = c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            spreads = c.execute("SELECT COUNT(*) FROM spreads").fetchone()[0]
+            purchases = c.execute("SELECT COUNT(*) FROM purchases").fetchone()[0]
+            stars = c.execute("SELECT COALESCE(SUM(stars),0) FROM purchases").fetchone()[0]
+            return {
+                "users": users,
+                "spreads": spreads,
+                "purchases": purchases,
+                "stars": stars,
+            }
