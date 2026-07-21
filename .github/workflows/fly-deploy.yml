@@ -5,6 +5,11 @@ name: Fly Deploy
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - ".github/**"
+      - "**.md"
+      - "tests/**"
+      - "tools/**"
   workflow_dispatch:
 
 jobs:
