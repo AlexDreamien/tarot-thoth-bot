@@ -32,6 +32,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Add a look at the future to a spread (⭐{future}).\n"
             "• Two clarifying cards for a spread (⭐{extra2}).\n"
             "• Five clarifying cards for a spread (⭐{extra5}).\n\n"
+            "/history — browse and revisit your past readings.\n"
             "/lang — change language."
         ),
         "lang_prompt": "Choose your language:",
@@ -56,6 +57,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "no_spread_yet": "Draw a spread first with /tarot.",
         "already_bought": "You've already added this to this spread.",
         "cancelled": "Cancelled.",
+        "hist_title": "🗓 <b>Your past readings.</b> Pick a date:",
+        "hist_empty": "You have no readings yet. Draw your first with /tarot.",
+        "hist_pick": "Several readings that day — pick one:",
+        "hist_daily_label": "🔮 Daily reading",
+        "hist_back": "◀ Back to calendar",
+        "hist_replay_daily": "🗓 <b>Reading · {date}</b>",
+        "hist_replay_context": "🗓 <b>Reading for a situation · {date}</b>",
+        "hist_situation": "✍️ Request: {situation}",
         "invoice_title_context": "Reading for a situation",
         "invoice_desc_context": "A fresh three-card Thoth spread read for the situation you describe.",
         "invoice_title_future": "A look at the future",
@@ -87,6 +96,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Добавить взгляд в будущее к раскладу (⭐{future}).\n"
             "• Две уточняющие карты к раскладу (⭐{extra2}).\n"
             "• Пять уточняющих карт к раскладу (⭐{extra5}).\n\n"
+            "/history — смотреть и повторять свои прошлые расклады.\n"
             "/lang — сменить язык."
         ),
         "lang_prompt": "Выбери язык:",
@@ -111,6 +121,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "no_spread_yet": "Сначала сделай расклад командой /tarot.",
         "already_bought": "Эта услуга уже добавлена к этому раскладу.",
         "cancelled": "Отменено.",
+        "hist_title": "🗓 <b>Твои прошлые расклады.</b> Выбери дату:",
+        "hist_empty": "У тебя пока нет раскладов. Сделай первый: /tarot.",
+        "hist_pick": "В этот день было несколько раскладов — выбери:",
+        "hist_daily_label": "🔮 Ежедневный расклад",
+        "hist_back": "◀ К календарю",
+        "hist_replay_daily": "🗓 <b>Расклад · {date}</b>",
+        "hist_replay_context": "🗓 <b>Расклад под ситуацию · {date}</b>",
+        "hist_situation": "✍️ Запрос: {situation}",
         "invoice_title_context": "Расклад под ситуацию",
         "invoice_desc_context": "Отдельный расклад из трёх карт Тота под описанную тобой ситуацию.",
         "invoice_title_future": "Взгляд в будущее",
@@ -142,6 +160,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Додати погляд у майбутнє до розкладу (⭐{future}).\n"
             "• Дві уточнювальні карти до розкладу (⭐{extra2}).\n"
             "• П'ять уточнювальних карт до розкладу (⭐{extra5}).\n\n"
+            "/history — переглядати й повторювати свої минулі розклади.\n"
             "/lang — змінити мову."
         ),
         "lang_prompt": "Обери мову:",
@@ -166,6 +185,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "no_spread_yet": "Спочатку зроби розклад командою /tarot.",
         "already_bought": "Ця послуга вже додана до цього розкладу.",
         "cancelled": "Скасовано.",
+        "hist_title": "🗓 <b>Твої минулі розклади.</b> Обери дату:",
+        "hist_empty": "У тебе поки немає розкладів. Зроби перший: /tarot.",
+        "hist_pick": "Того дня було кілька розкладів — обери:",
+        "hist_daily_label": "🔮 Щоденний розклад",
+        "hist_back": "◀ До календаря",
+        "hist_replay_daily": "🗓 <b>Розклад · {date}</b>",
+        "hist_replay_context": "🗓 <b>Розклад під ситуацію · {date}</b>",
+        "hist_situation": "✍️ Запит: {situation}",
         "invoice_title_context": "Розклад під ситуацію",
         "invoice_desc_context": "Окремий розклад із трьох карт Тота під описану тобою ситуацію.",
         "invoice_title_future": "Погляд у майбутнє",
@@ -180,6 +207,64 @@ _STRINGS: dict[str, dict[str, str]] = {
         "stats": "👤 Користувачів: {users}\n🃏 Розкладів: {spreads}\n⭐ Покупок: {purchases} ({stars}⭐)",
     },
 }
+
+
+# Calendar labels for the /history view — kept out of _STRINGS (they're lists,
+# not template strings, and the key-matching test only covers _STRINGS).
+MONTHS = {
+    "en": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ],
+    "ru": [
+        "Январь",
+        "Февраль",
+        "Март",
+        "Апрель",
+        "Май",
+        "Июнь",
+        "Июль",
+        "Август",
+        "Сентябрь",
+        "Октябрь",
+        "Ноябрь",
+        "Декабрь",
+    ],
+    "uk": [
+        "Січень",
+        "Лютий",
+        "Березень",
+        "Квітень",
+        "Травень",
+        "Червень",
+        "Липень",
+        "Серпень",
+        "Вересень",
+        "Жовтень",
+        "Листопад",
+        "Грудень",
+    ],
+}
+WEEKDAYS = {
+    "en": ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    "ru": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+    "uk": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+}
+
+
+def _cal_labels(lang: str):
+    lang = lang if lang in MONTHS else DEFAULT_LANG
+    return MONTHS[lang], WEEKDAYS[lang]
 
 
 def t(lang: str, key: str, **kwargs) -> str:

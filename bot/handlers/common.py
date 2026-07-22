@@ -33,7 +33,9 @@ def _help_prices() -> dict[str, int]:
 async def cmd_start(message: Message, db: Database, cfg: Config) -> None:
     if message.from_user is None:
         return
-    lang = await get_lang(db, message.from_user.id, cfg.default_lang)
+    lang = await get_lang(
+        db, message.from_user.id, cfg.default_lang, name=message.from_user.full_name
+    )
     await message.answer(t(lang, "start"))
 
 

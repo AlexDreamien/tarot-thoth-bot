@@ -83,6 +83,38 @@ def test_all_extra_cards(db):
     assert set(db.all_extra_cards(row["id"])) == {"m", "n", "p", "q", "r"}
 
 
+def test_name_stored_and_updated(db):
+    assert db.get_or_create_user(1, "ru", name="Alice") == "ru"
+    assert db.conn.execute("SELECT name FROM users WHERE user_id=1").fetchone()["name"] == "Alice"
+    db.get_or_create_user(1, "en", name="Alice B")  # existing user → name refreshed
+    assert db.conn.execute("SELECT name FROM users WHERE user_id=1").fetchone()["name"] == "Alice B"
+
+
+def test_history_queries_are_per_user(db):
+    a = db.get_or_create_spread(
+        user_id=1, day="2026-07-20", kind="daily", scope_key="k1", card_ids=["major_00"]
+    )
+    b = db.get_or_create_spread(
+        user_id=1,
+        day="2026-07-22",
+        kind="context",
+        scope_key="k2",
+        card_ids=["swords_05", "wands_03"],
+        situation="work",
+    )
+    db.get_or_create_spread(  # a different user's spread must never leak
+        user_id=2, day="2026-07-22", kind="daily", scope_key="k3", card_ids=["major_01"]
+    )
+    assert db.reading_day_keys(1) == {"2026-07-20", "2026-07-22"}
+    assert [r["id"] for r in db.spreads_on_day(1, "2026-07-22")] == [b["id"]]
+    assert db.get_owned_spread(1, b["id"])["id"] == b["id"]
+    assert db.get_owned_spread(2, b["id"]) is None  # access guard
+    assert a["id"] != b["id"]
+    db.get_or_create_extra(spread_id=b["id"], count=2, card_ids=["x", "y"])
+    db.get_or_create_extra(spread_id=b["id"], count=3, card_ids=["p", "q", "r"])
+    assert [e["count"] for e in db.extras_for_spread(b["id"])] == [2, 3]
+
+
 def test_usable_from_another_thread(db):
     # The async layer calls db methods from asyncio.to_thread worker threads,
     # not the thread that opened the connection. Without check_same_thread=False

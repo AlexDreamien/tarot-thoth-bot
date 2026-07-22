@@ -107,6 +107,22 @@ python tools/generate_cards.py  # regenerate the 78 card images
   (payloads are ≤128 bytes). `ContextFlow.waiting_situation` → the user's text is
   stored via `state.update_data(situation=...)` → invoice → on
   `successful_payment` the handler reads it back and clears state.
+- **`/history` is a per-user archive; every query is user-scoped in SQL.**
+  `handlers/history.py` shows a month calendar (`keyboards.calendar_keyboard`,
+  callbacks `hist:nav:YYYY-MM` / `hist:day:YYYY-MM-DD` / `hist:show:<id>` /
+  `hist:noop`) of the user's own reading dates (`db.reading_day_keys`), and
+  replays a stored reading in full (cards, interpretation, future, extras).
+  Access control is the SQL `WHERE user_id=?` in `spreads_on_day` /
+  `get_owned_spread` — never fetch a spread for replay via unscoped
+  `get_spread`. Dates are the `spreads.day` day-key (`YYYY-MM-DD`, sortable).
+- **Schema changes to existing tables use `db._add_column` (forward migration).**
+  The prod SQLite lives on a Fly volume and predates newer columns (e.g.
+  `users.name`); `CREATE TABLE IF NOT EXISTS` won't add a column, so `_migrate`
+  calls `_add_column("users", "name", "TEXT")` which `ALTER TABLE ADD COLUMN`s
+  only if `PRAGMA table_info` shows it missing. Use this for any new column on
+  an existing table — never assume a fresh DB.
+- **Calendar month/weekday labels are `i18n.MONTHS`/`WEEKDAYS`, not `_STRINGS`**
+  (they're lists, and the `test_i18n` key-matching test only covers `_STRINGS`).
 - **`i18n` requires matching key sets across ru/uk/en** (`test_i18n.py`), with
   lookup falling back ru→en→raw-key. Add a key to all three languages.
 - **Callback/message handlers guard `from_user is None`** before using `.id`.

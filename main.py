@@ -19,6 +19,7 @@ from bot.interpret import Interpreter
 
 _COMMANDS = [
     BotCommand(command="tarot", description="Расклад на сегодня / Today's spread"),
+    BotCommand(command="history", description="Мои расклады / My readings"),
     BotCommand(command="help", description="Как это работает / How it works"),
     BotCommand(command="lang", description="Язык / Language"),
 ]

@@ -63,8 +63,8 @@ async def available_for_spread(db: Database, spread_id: int) -> list[str]:
     return available_addons(*await spread_addon_state(db, spread_id))
 
 
-async def get_lang(db: Database, user_id: int, default_lang: str) -> str:
-    return await asyncio.to_thread(db.get_or_create_user, user_id, default_lang)
+async def get_lang(db: Database, user_id: int, default_lang: str, name: str | None = None) -> str:
+    return await asyncio.to_thread(db.get_or_create_user, user_id, default_lang, name)
 
 
 async def ensure_daily_spread(

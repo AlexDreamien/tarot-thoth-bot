@@ -50,6 +50,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS users (
                 user_id    INTEGER PRIMARY KEY,
                 lang       TEXT NOT NULL,
+                name       TEXT,
                 created_at TEXT NOT NULL
             );
 
@@ -86,18 +87,31 @@ class Database:
                 created_at TEXT NOT NULL
             );
             """)
+        self._add_column("users", "name", "TEXT")
         self.conn.commit()
+
+    def _add_column(self, table: str, col: str, decl: str) -> None:
+        """Add a column to an existing table if it's missing (forward migration
+        for databases created before the column existed)."""
+        existing = {r["name"] for r in self.conn.execute(f"PRAGMA table_info({table})")}
+        if col not in existing:
+            self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
 
     # --- users -----------------------------------------------------------
 
-    def get_or_create_user(self, user_id: int, default_lang: str) -> str:
+    def get_or_create_user(self, user_id: int, default_lang: str, name: str | None = None) -> str:
         with self._lock:
-            row = self.conn.execute("SELECT lang FROM users WHERE user_id=?", (user_id,)).fetchone()
+            row = self.conn.execute(
+                "SELECT lang, name FROM users WHERE user_id=?", (user_id,)
+            ).fetchone()
             if row:
+                if name and name != row["name"]:
+                    self.conn.execute("UPDATE users SET name=? WHERE user_id=?", (name, user_id))
+                    self.conn.commit()
                 return row["lang"]
             self.conn.execute(
-                "INSERT INTO users(user_id, lang, created_at) VALUES(?,?,?)",
-                (user_id, default_lang, _now()),
+                "INSERT INTO users(user_id, lang, name, created_at) VALUES(?,?,?,?)",
+                (user_id, default_lang, name, _now()),
             )
             self.conn.commit()
             return default_lang
@@ -210,6 +224,35 @@ class Database:
         for r in rows:
             out.extend(split_cards(r["card_ids"]))
         return out
+
+    # --- history (a user's own past readings) ----------------------------
+
+    def reading_day_keys(self, user_id: int) -> set[str]:
+        """Distinct ``YYYY-MM-DD`` dates on which this user has any spread."""
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT DISTINCT day FROM spreads WHERE user_id=?", (user_id,)
+            ).fetchall()
+        return {r["day"] for r in rows}
+
+    def spreads_on_day(self, user_id: int, day: str) -> list[sqlite3.Row]:
+        with self._lock:
+            return self.conn.execute(
+                "SELECT * FROM spreads WHERE user_id=? AND day=? ORDER BY id", (user_id, day)
+            ).fetchall()
+
+    def get_owned_spread(self, user_id: int, spread_id: int) -> sqlite3.Row | None:
+        """A spread by id, but only if it belongs to ``user_id`` (access guard)."""
+        with self._lock:
+            return self.conn.execute(
+                "SELECT * FROM spreads WHERE id=? AND user_id=?", (spread_id, user_id)
+            ).fetchone()
+
+    def extras_for_spread(self, spread_id: int) -> list[sqlite3.Row]:
+        with self._lock:
+            return self.conn.execute(
+                "SELECT * FROM extra_draws WHERE spread_id=? ORDER BY count", (spread_id,)
+            ).fetchall()
 
     # --- purchases -------------------------------------------------------
 

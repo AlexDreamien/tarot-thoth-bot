@@ -22,7 +22,9 @@ router = Router()
 async def cmd_tarot(message: Message, db: Database, cfg: Config, interp: Interpreter) -> None:
     if message.from_user is None:
         return
-    lang = await get_lang(db, message.from_user.id, cfg.default_lang)
+    lang = await get_lang(
+        db, message.from_user.id, cfg.default_lang, name=message.from_user.full_name
+    )
     day = day_key(cfg.tz)
     await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
