@@ -58,13 +58,16 @@ python tools/generate_cards.py  # regenerate the 78 card images
   converted — this defines when the daily spread rolls over. Regression test in
   `test_daily.py` covers the timezone boundary.
 - **Card art is swappable without code changes.** `cards_render` loads
-  `assets/cards/<id>.png` and falls back to procedural rendering if absent; the
-  bundled PNGs are procedural placeholders. Replace the PNGs (same filenames) to
-  ship real Thoth-style art. The single-card renderer lives in
-  `cards_render.render_card` and is also what `tools/generate_cards.py` writes.
-- **Central card emblems are drawn as vector shapes, not font glyphs**
-  (`cards_render._draw_symbol`) — geometric Unicode glyphs render as missing-box
-  tofu in DejaVu, so triangle/diamond/square/star are drawn with `ImageDraw`.
+  `assets/cards/<id>.png` and falls back to `render_card` if absent. The bundled
+  PNGs are an **original procedurally-drawn vector deck** (single-card renderer
+  `cards_render.render_card`, also what `tools/generate_cards.py` writes).
+  Replace the PNGs (same filenames) to ship different art.
+- **All card emblems are drawn as vector shapes, never font glyphs** — geometric
+  Unicode renders as missing-box tofu in DejaVu, so suit symbols, pip layouts,
+  court medallions and the 22 Major emblems are composed from `ImageDraw`
+  primitives. `render_card` supersamples 3× then downscales (LANCZOS) for smooth
+  edges; `ImageDraw.arc` bounding boxes must be left→right / top→bottom (a
+  reversed box raises `ValueError`).
 - **DB calls are synchronous sqlite3 wrapped in `asyncio.to_thread`** by the
   thin layer (`service.py`, handlers). Keep `db.py` methods sync and testable;
   never `await` them directly — wrap at the call site so the event loop stays

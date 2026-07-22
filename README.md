@@ -47,11 +47,13 @@ by:
 python tools/generate_cards.py
 ```
 
-The bundled art is **procedural** (Pillow — element colours, suit emblem, card
-name and Thoth title): legible placeholders, not final Thoth artwork. To ship
-real art, generate 78 images with your image model of choice and drop them in
+The bundled art is an **original vector deck** drawn with Pillow: an
+element-tinted gradient, a gilt double border, star-dust, classic pip layouts
+for the small cards, heraldic medallions for the courts, and a bespoke symbol
+for each Major Arcanum — one cohesive style, no third-party imagery. To ship a
+different look (e.g. painterly art from an image model), drop 78 PNGs into
 `assets/cards/` under the same filenames — nothing else changes. If an asset is
-missing at runtime, the card is rendered procedurally on the fly.
+missing at runtime, the card is drawn on the fly by the same renderer.
 
 ## Tests & CI
 
