@@ -12,7 +12,7 @@ from ..daily import day_key
 from ..db import Database, split_cards
 from ..i18n import t
 from ..interpret import Interpreter
-from ..service import ensure_daily_spread, get_lang
+from ..service import available_for_spread, ensure_daily_spread, get_lang
 from .render import deliver_spread
 
 router = Router()
@@ -39,4 +39,5 @@ async def cmd_tarot(message: Message, db: Database, cfg: Config, interp: Interpr
         interpretation=interpretation,
         header=t(lang, "daily_header", date=day),
         spread_id=row["id"],
+        available=await available_for_spread(db, row["id"]),
     )

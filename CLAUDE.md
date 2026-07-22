@@ -85,16 +85,21 @@ python tools/generate_cards.py  # regenerate the 78 card images
   in the invoice payload and persisted in `purchases`, so keep them stable
   (`pricing.py`). Payloads are `"{product}:{spread_id}"`, or `"{product}:ctx"`
   for the context flow.
-- **Up-sell model: each add-on is once per spread; buttons re-appear after
-  every paid message.** `future`/`+2`/`+5` attach to a specific spread and are
-  consumed once each (`service.purchased_addons` derives what's bought from
-  `spreads.future_text` + `extra_draws`). `offers_keyboard(..., purchased)`
-  hides bought add-ons; `render.send_offers` re-posts the keyboard after the
-  daily spread AND after each paid add-on message. `cb_buy` refuses a stale
-  button for an already-bought add-on (toast `already_bought`) so Stars aren't
-  charged for a cached result. The **"reading for a situation"** button
-  (`ctx`) is always shown — a context reading is a fresh, independent spread
-  and is unlimited per day; each one gets its own once-each add-on set.
+- **Up-sell model: per-spread add-ons; buttons re-appear after every paid
+  message showing only what's still valid.** `future` is once per spread.
+  Clarifying cards are a **tiered upgrade toward five total**: with none bought,
+  offer +2 (2⭐) or +5 (5⭐); after a +2, offer only a +3 top-up (3⭐, reaching
+  five — 2+3 == 5⭐); at five (a +5, or +2 then +3) offer nothing more. The
+  state machine is `service.spread_addon_state` (`(future_bought, "none"|"two"|
+  "full")`) → `service.available_addons` → the ordered product list rendered by
+  `offers_keyboard(lang, spread_id, available)`. `render.send_offers` re-posts
+  the keyboard after the daily/context spread AND after each paid add-on
+  message. `cb_buy` refuses any product **not** in `available_for_spread` (toast
+  `already_bought`) — this blocks both a re-buy and a stale +5 button after a
+  +2. `ensure_extra` excludes `db.all_extra_cards` (base + prior clarifying
+  cards) so a +3 never repeats the +2 cards. The **`ctx`** button is always
+  shown — a context reading is a fresh, independent spread, unlimited per day,
+  with its own tiered add-on set.
 - **The context-reading situation rides in FSM state, not the invoice payload**
   (payloads are ≤128 bytes). `ContextFlow.waiting_situation` → the user's text is
   stored via `state.update_data(situation=...)` → invoice → on

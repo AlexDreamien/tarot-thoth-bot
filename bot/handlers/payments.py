@@ -28,11 +28,11 @@ from ..db import Database
 from ..i18n import t
 from ..interpret import Interpreter
 from ..service import (
+    available_for_spread,
     ensure_context_spread,
     ensure_extra,
     ensure_future,
     get_lang,
-    purchased_addons,
 )
 from .render import cards_line, deliver_spread, send_cards_photo, send_offers
 
@@ -44,6 +44,7 @@ _I18N_SUFFIX = {
     pricing.FUTURE: "future",
     pricing.EXTRA_2: "extra2",
     pricing.EXTRA_5: "extra5",
+    pricing.EXTRA_3: "extra3",
 }
 
 
@@ -74,9 +75,9 @@ async def cb_buy(callback: CallbackQuery, db: Database, cfg: Config) -> None:
         return
     _, product, spread_id = callback.data.split(":", 2)
     lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
-    # Each add-on is once per spread — refuse a stale button for one already
-    # bought instead of charging Stars for a cached result.
-    if product in await purchased_addons(db, int(spread_id)):
+    # Refuse a stale/invalid button (an add-on already bought, or a +5 after a
+    # +2 that's now a +3) instead of charging Stars for a cached result.
+    if product not in await available_for_spread(db, int(spread_id)):
         await callback.answer(t(lang, "already_bought"), show_alert=True)
         return
     await callback.answer()
@@ -149,7 +150,7 @@ async def on_paid(
                 message,
                 lang=lang,
                 spread_id=spread_id,
-                purchased=await purchased_addons(db, spread_id),
+                available=await available_for_spread(db, spread_id),
             )
 
         elif product in (pricing.EXTRA_2, pricing.EXTRA_5):
@@ -168,7 +169,7 @@ async def on_paid(
                 message,
                 lang=lang,
                 spread_id=spread_id,
-                purchased=await purchased_addons(db, spread_id),
+                available=await available_for_spread(db, spread_id),
             )
 
         elif product == pricing.CONTEXT_READING:
@@ -192,6 +193,7 @@ async def on_paid(
                 interpretation=text,
                 header=t(lang, "context_header"),
                 spread_id=row["id"],
+                available=await available_for_spread(db, row["id"]),
             )
     except Exception:
         await message.answer(t(lang, "error_generic"))

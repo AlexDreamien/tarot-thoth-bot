@@ -27,13 +27,14 @@ async def send_offers(
     *,
     lang: str,
     spread_id: int,
-    purchased: frozenset[str] | set[str] = frozenset(),
+    available: list[str],
 ) -> None:
-    """Show the up-sell keyboard for a spread, hiding add-ons already bought.
-    Called after the daily spread and after every paid add-on message."""
+    """Show the up-sell keyboard for a spread. ``available`` comes from
+    ``service.available_addons``. Called after the daily spread and after every
+    paid add-on message."""
     await message.answer(
         t(lang, "offers_title"),
-        reply_markup=offers_keyboard(lang, spread_id, purchased),
+        reply_markup=offers_keyboard(lang, spread_id, available),
     )
 
 
@@ -45,12 +46,10 @@ async def deliver_spread(
     interpretation: str,
     header: str,
     spread_id: int,
-    with_offers: bool = True,
-    purchased: frozenset[str] | set[str] = frozenset(),
+    available: list[str],
 ) -> None:
     """Photo (header + card names) → interpretation text → up-sell keyboard."""
     caption = f"{header}\n{t(lang, 'cards_line', cards=cards_line(lang, card_ids))}"
     await send_cards_photo(message, card_ids, caption)
     await message.answer(interpretation)
-    if with_offers:
-        await send_offers(message, lang=lang, spread_id=spread_id, purchased=purchased)
+    await send_offers(message, lang=lang, spread_id=spread_id, available=available)

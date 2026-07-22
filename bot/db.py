@@ -199,6 +199,18 @@ class Database:
             ).fetchall()
             return {r["count"] for r in rows}
 
+    def all_extra_cards(self, spread_id: int) -> list[str]:
+        """Every card id already drawn as a clarifying card for this spread, so
+        a follow-up draw (e.g. +3 after +2) never repeats one."""
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT card_ids FROM extra_draws WHERE spread_id=?", (spread_id,)
+            ).fetchall()
+        out: list[str] = []
+        for r in rows:
+            out.extend(split_cards(r["card_ids"]))
+        return out
+
     # --- purchases -------------------------------------------------------
 
     def log_purchase(

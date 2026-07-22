@@ -44,6 +44,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_future": "🔭 Add the future — ⭐{future}",
         "btn_extra2": "➕ Two clarifying cards — ⭐{extra2}",
         "btn_extra5": "➕ Five clarifying cards — ⭐{extra5}",
+        "btn_extra3": "➕ Three more cards (up to five) — ⭐{extra3}",
         "btn_context": "✍️ Read a specific situation — ⭐{context}",
         "context_prompt": (
             "✍️ Describe the situation in a message, and I'll lay a fresh three-card "
@@ -63,6 +64,8 @@ _STRINGS: dict[str, dict[str, str]] = {
         "invoice_desc_extra2": "Add two cards to your spread and read them within it.",
         "invoice_title_extra5": "Five clarifying cards",
         "invoice_desc_extra5": "Add five cards to your spread and read them within it.",
+        "invoice_title_extra3": "Three more clarifying cards",
+        "invoice_desc_extra3": "Add three more cards to your spread — five clarifying cards in total.",
         "pay_thanks": "Thank you! ⭐ Here you go:",
         "stats": "👤 Users: {users}\n🃏 Spreads: {spreads}\n⭐ Purchases: {purchases} ({stars}⭐)",
     },
@@ -96,6 +99,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_future": "🔭 Добавить будущее — ⭐{future}",
         "btn_extra2": "➕ Две уточняющие карты — ⭐{extra2}",
         "btn_extra5": "➕ Пять уточняющих карт — ⭐{extra5}",
+        "btn_extra3": "➕ Ещё 3 карты (до пяти) — ⭐{extra3}",
         "btn_context": "✍️ Расклад под ситуацию — ⭐{context}",
         "context_prompt": (
             "✍️ Опиши ситуацию в сообщении — я сделаю отдельный расклад из трёх карт "
@@ -115,6 +119,8 @@ _STRINGS: dict[str, dict[str, str]] = {
         "invoice_desc_extra2": "Добавить две карты к раскладу и истолковать их в его рамках.",
         "invoice_title_extra5": "Пять уточняющих карт",
         "invoice_desc_extra5": "Добавить пять карт к раскладу и истолковать их в его рамках.",
+        "invoice_title_extra3": "Ещё три уточняющие карты",
+        "invoice_desc_extra3": "Добавить ещё три карты к раскладу — всего пять уточняющих.",
         "pay_thanks": "Спасибо! ⭐ Держи:",
         "stats": "👤 Пользователей: {users}\n🃏 Раскладов: {spreads}\n⭐ Покупок: {purchases} ({stars}⭐)",
     },
@@ -148,6 +154,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_future": "🔭 Додати майбутнє — ⭐{future}",
         "btn_extra2": "➕ Дві уточнювальні карти — ⭐{extra2}",
         "btn_extra5": "➕ П'ять уточнювальних карт — ⭐{extra5}",
+        "btn_extra3": "➕ Ще 3 карти (до п'яти) — ⭐{extra3}",
         "btn_context": "✍️ Розклад під ситуацію — ⭐{context}",
         "context_prompt": (
             "✍️ Опиши ситуацію в повідомленні — я зроблю окремий розклад із трьох карт "
@@ -167,6 +174,8 @@ _STRINGS: dict[str, dict[str, str]] = {
         "invoice_desc_extra2": "Додати дві карти до розкладу й витлумачити їх у його межах.",
         "invoice_title_extra5": "П'ять уточнювальних карт",
         "invoice_desc_extra5": "Додати п'ять карт до розкладу й витлумачити їх у його межах.",
+        "invoice_title_extra3": "Ще три уточнювальні карти",
+        "invoice_desc_extra3": "Додати ще три карти до розкладу — усього п'ять уточнювальних.",
         "pay_thanks": "Дякую! ⭐ Тримай:",
         "stats": "👤 Користувачів: {users}\n🃏 Розкладів: {spreads}\n⭐ Покупок: {purchases} ({stars}⭐)",
     },
