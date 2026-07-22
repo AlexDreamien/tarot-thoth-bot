@@ -68,6 +68,14 @@ def test_stats_and_purchases(db):
     assert s == {"users": 1, "spreads": 1, "purchases": 2, "stars": 6}
 
 
+def test_extra_counts(db):
+    row = db.get_or_create_spread(user_id=1, day="d", kind="daily", scope_key="k", card_ids=["a"])
+    assert db.extra_counts(row["id"]) == set()
+    db.get_or_create_extra(spread_id=row["id"], count=2, card_ids=["m", "n"])
+    db.get_or_create_extra(spread_id=row["id"], count=5, card_ids=["a", "b", "c", "d", "e"])
+    assert db.extra_counts(row["id"]) == {2, 5}
+
+
 def test_usable_from_another_thread(db):
     # The async layer calls db methods from asyncio.to_thread worker threads,
     # not the thread that opened the connection. Without check_same_thread=False

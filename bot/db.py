@@ -190,6 +190,15 @@ class Database:
             )
             self.conn.commit()
 
+    def extra_counts(self, spread_id: int) -> set[int]:
+        """The ``count`` of every extra draw already bought for this spread
+        (used to hide add-ons that are consumed once per spread)."""
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT count FROM extra_draws WHERE spread_id=?", (spread_id,)
+            ).fetchall()
+            return {r["count"] for r in rows}
+
     # --- purchases -------------------------------------------------------
 
     def log_purchase(

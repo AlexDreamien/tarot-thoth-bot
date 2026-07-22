@@ -27,8 +27,14 @@ from ..daily import day_key
 from ..db import Database
 from ..i18n import t
 from ..interpret import Interpreter
-from ..service import ensure_context_spread, ensure_extra, ensure_future, get_lang
-from .render import cards_line, deliver_spread, send_cards_photo
+from ..service import (
+    ensure_context_spread,
+    ensure_extra,
+    ensure_future,
+    get_lang,
+    purchased_addons,
+)
+from .render import cards_line, deliver_spread, send_cards_photo, send_offers
 
 router = Router()
 
@@ -68,6 +74,11 @@ async def cb_buy(callback: CallbackQuery, db: Database, cfg: Config) -> None:
         return
     _, product, spread_id = callback.data.split(":", 2)
     lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    # Each add-on is once per spread — refuse a stale button for one already
+    # bought instead of charging Stars for a cached result.
+    if product in await purchased_addons(db, int(spread_id)):
+        await callback.answer(t(lang, "already_bought"), show_alert=True)
+        return
     await callback.answer()
     if isinstance(callback.message, Message):
         await _send_invoice(callback.message, lang, product, f"{product}:{spread_id}")
@@ -131,13 +142,21 @@ async def on_paid(
 
     try:
         if product == pricing.FUTURE:
-            text = await ensure_future(db, interp, spread_id=int(ref), lang=lang)
+            spread_id = int(ref)
+            text = await ensure_future(db, interp, spread_id=spread_id, lang=lang)
             await message.answer(f"{t(lang, 'future_header')}\n\n{text}")
+            await send_offers(
+                message,
+                lang=lang,
+                spread_id=spread_id,
+                purchased=await purchased_addons(db, spread_id),
+            )
 
         elif product in (pricing.EXTRA_2, pricing.EXTRA_5):
+            spread_id = int(ref)
             count = pricing.EXTRA_COUNT[product]
             extra_cards, text = await ensure_extra(
-                db, interp, spread_id=int(ref), count=count, lang=lang
+                db, interp, spread_id=spread_id, count=count, lang=lang
             )
             caption = (
                 f"{t(lang, 'extra_header', n=count)}\n"
@@ -145,6 +164,12 @@ async def on_paid(
             )
             await send_cards_photo(message, extra_cards, caption)
             await message.answer(text)
+            await send_offers(
+                message,
+                lang=lang,
+                spread_id=spread_id,
+                purchased=await purchased_addons(db, spread_id),
+            )
 
         elif product == pricing.CONTEXT_READING:
             data = await state.get_data()

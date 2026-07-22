@@ -22,6 +22,21 @@ async def send_cards_photo(message: Message, card_ids: list[str], caption: str) 
     await message.answer_photo(BufferedInputFile(png, filename="spread.png"), caption=caption)
 
 
+async def send_offers(
+    message: Message,
+    *,
+    lang: str,
+    spread_id: int,
+    purchased: frozenset[str] | set[str] = frozenset(),
+) -> None:
+    """Show the up-sell keyboard for a spread, hiding add-ons already bought.
+    Called after the daily spread and after every paid add-on message."""
+    await message.answer(
+        t(lang, "offers_title"),
+        reply_markup=offers_keyboard(lang, spread_id, purchased),
+    )
+
+
 async def deliver_spread(
     message: Message,
     *,
@@ -31,10 +46,11 @@ async def deliver_spread(
     header: str,
     spread_id: int,
     with_offers: bool = True,
+    purchased: frozenset[str] | set[str] = frozenset(),
 ) -> None:
     """Photo (header + card names) → interpretation text → up-sell keyboard."""
     caption = f"{header}\n{t(lang, 'cards_line', cards=cards_line(lang, card_ids))}"
     await send_cards_photo(message, card_ids, caption)
     await message.answer(interpretation)
     if with_offers:
-        await message.answer(t(lang, "offers_title"), reply_markup=offers_keyboard(lang, spread_id))
+        await send_offers(message, lang=lang, spread_id=spread_id, purchased=purchased)

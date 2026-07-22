@@ -85,6 +85,16 @@ python tools/generate_cards.py  # regenerate the 78 card images
   in the invoice payload and persisted in `purchases`, so keep them stable
   (`pricing.py`). Payloads are `"{product}:{spread_id}"`, or `"{product}:ctx"`
   for the context flow.
+- **Up-sell model: each add-on is once per spread; buttons re-appear after
+  every paid message.** `future`/`+2`/`+5` attach to a specific spread and are
+  consumed once each (`service.purchased_addons` derives what's bought from
+  `spreads.future_text` + `extra_draws`). `offers_keyboard(..., purchased)`
+  hides bought add-ons; `render.send_offers` re-posts the keyboard after the
+  daily spread AND after each paid add-on message. `cb_buy` refuses a stale
+  button for an already-bought add-on (toast `already_bought`) so Stars aren't
+  charged for a cached result. The **"reading for a situation"** button
+  (`ctx`) is always shown — a context reading is a fresh, independent spread
+  and is unlimited per day; each one gets its own once-each add-on set.
 - **The context-reading situation rides in FSM state, not the invoice payload**
   (payloads are ≤128 bytes). `ContextFlow.waiting_situation` → the user's text is
   stored via `state.update_data(situation=...)` → invoice → on

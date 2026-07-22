@@ -13,13 +13,29 @@ import asyncio
 import hashlib
 import sqlite3
 
-from . import deck
+from . import deck, pricing
 from .db import Database, split_cards
 from .interpret import Interpreter
 
 
 def _situation_hash(situation: str) -> str:
     return hashlib.sha256(situation.strip().encode("utf-8")).hexdigest()[:8]
+
+
+async def purchased_addons(db: Database, spread_id: int) -> set[str]:
+    """Product codes of the add-ons already consumed for this spread. Each
+    add-on (future, +2, +5) is once per spread; the up-sell keyboard hides the
+    ones already here, and the buy handler refuses to re-charge them."""
+    row = await asyncio.to_thread(db.get_spread, spread_id)
+    counts = await asyncio.to_thread(db.extra_counts, spread_id)
+    out: set[str] = set()
+    if row is not None and row["future_text"] is not None:
+        out.add(pricing.FUTURE)
+    if pricing.EXTRA_COUNT[pricing.EXTRA_2] in counts:
+        out.add(pricing.EXTRA_2)
+    if pricing.EXTRA_COUNT[pricing.EXTRA_5] in counts:
+        out.add(pricing.EXTRA_5)
+    return out
 
 
 async def get_lang(db: Database, user_id: int, default_lang: str) -> str:
