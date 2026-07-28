@@ -25,13 +25,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "help": (
             "🔮 <b>How it works</b>\n\n"
             "• /tarot — your three-card spread for today with a reading of your "
-            "current disposition (no fortune-telling). Free, one per day, fixed.\n\n"
-            "<b>Paid add-ons</b> (Telegram Stars ⭐), offered after a spread:\n"
-            "• Describe a situation — a fresh spread read for that exact situation "
-            "(⭐{context}).\n"
-            "• Add a look at the future to a spread (⭐{future}).\n"
-            "• Two clarifying cards for a spread (⭐{extra2}).\n"
-            "• Five clarifying cards for a spread (⭐{extra5}).\n\n"
+            "current disposition (no fortune-telling). One per day, fixed.\n\n"
+            "After a spread you can add, right from the buttons: a look at the "
+            "future, extra clarifying cards, or a reading for a specific "
+            "situation you describe.\n\n"
             "/history — browse and revisit your past readings.\n"
             "/lang — change language."
         ),
@@ -42,14 +39,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         "generating": "🔮 Reading the cards…",
         "error_generic": "Something went wrong reading the cards. Try again in a moment.",
         "offers_title": "Want to go deeper?",
-        "btn_future": "🔭 Add the future — ⭐{future}",
-        "btn_extra2": "➕ Two clarifying cards — ⭐{extra2}",
-        "btn_extra5": "➕ Five clarifying cards — ⭐{extra5}",
-        "btn_extra3": "➕ Three more cards (up to five) — ⭐{extra3}",
-        "btn_context": "✍️ Read a specific situation — ⭐{context}",
+        "btn_future": "🔭 A look at the future",
+        "btn_extra2": "🃏 Two clarifying cards",
+        "btn_extra5": "🃏 Five clarifying cards",
+        "btn_extra3": "🃏 Three more cards (up to five)",
+        "btn_context": "✍️ Read a specific situation",
+        "price_suffix": " — ⭐{stars}",
         "context_prompt": (
             "✍️ Describe the situation in a message, and I'll lay a fresh three-card "
-            "spread read specifically for it (⭐{context}). Send /cancel to abort."
+            "spread read specifically for it. Send /cancel to abort."
         ),
         "context_header": "🔮 <b>Reading for your situation</b>",
         "future_header": "🔭 <b>A look at the future</b>",
@@ -90,12 +88,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "help": (
             "🔮 <b>Как это работает</b>\n\n"
             "• /tarot — три карты на сегодня с толкованием твоей текущей диспозиции "
-            "(без предсказаний). Бесплатно, один раз в день, фиксировано.\n\n"
-            "<b>Платные дополнения</b> (Telegram Stars ⭐), предлагаются после расклада:\n"
-            "• Опиши ситуацию — отдельный расклад именно под неё (⭐{context}).\n"
-            "• Добавить взгляд в будущее к раскладу (⭐{future}).\n"
-            "• Две уточняющие карты к раскладу (⭐{extra2}).\n"
-            "• Пять уточняющих карт к раскладу (⭐{extra5}).\n\n"
+            "(без предсказаний). Один раз в день, фиксировано.\n\n"
+            "После расклада прямо на кнопках можно добавить: взгляд в будущее, "
+            "уточняющие карты или расклад под конкретную ситуацию.\n\n"
             "/history — смотреть и повторять свои прошлые расклады.\n"
             "/lang — сменить язык."
         ),
@@ -106,14 +101,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         "generating": "🔮 Читаю карты…",
         "error_generic": "Не удалось прочитать карты. Попробуй ещё раз через минуту.",
         "offers_title": "Хочешь копнуть глубже?",
-        "btn_future": "🔭 Добавить будущее — ⭐{future}",
-        "btn_extra2": "➕ Две уточняющие карты — ⭐{extra2}",
-        "btn_extra5": "➕ Пять уточняющих карт — ⭐{extra5}",
-        "btn_extra3": "➕ Ещё 3 карты (до пяти) — ⭐{extra3}",
-        "btn_context": "✍️ Расклад под ситуацию — ⭐{context}",
+        "btn_future": "🔭 Взгляд в будущее",
+        "btn_extra2": "🃏 Две уточняющие карты",
+        "btn_extra5": "🃏 Пять уточняющих карт",
+        "btn_extra3": "🃏 Ещё 3 карты (до пяти)",
+        "btn_context": "✍️ Расклад под ситуацию",
+        "price_suffix": " — ⭐{stars}",
         "context_prompt": (
             "✍️ Опиши ситуацию в сообщении — я сделаю отдельный расклад из трёх карт "
-            "именно под неё (⭐{context}). /cancel — отменить."
+            "именно под неё. /cancel — отменить."
         ),
         "context_header": "🔮 <b>Расклад под твою ситуацию</b>",
         "future_header": "🔭 <b>Взгляд в будущее</b>",
@@ -154,12 +150,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "help": (
             "🔮 <b>Як це працює</b>\n\n"
             "• /tarot — три карти на сьогодні з тлумаченням твоєї поточної диспозиції "
-            "(без передбачень). Безкоштовно, раз на день, зафіксовано.\n\n"
-            "<b>Платні доповнення</b> (Telegram Stars ⭐), пропонуються після розкладу:\n"
-            "• Опиши ситуацію — окремий розклад саме під неї (⭐{context}).\n"
-            "• Додати погляд у майбутнє до розкладу (⭐{future}).\n"
-            "• Дві уточнювальні карти до розкладу (⭐{extra2}).\n"
-            "• П'ять уточнювальних карт до розкладу (⭐{extra5}).\n\n"
+            "(без передбачень). Раз на день, зафіксовано.\n\n"
+            "Після розкладу прямо з кнопок можна додати: погляд у майбутнє, "
+            "уточнювальні карти або розклад під конкретну ситуацію.\n\n"
             "/history — переглядати й повторювати свої минулі розклади.\n"
             "/lang — змінити мову."
         ),
@@ -170,14 +163,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         "generating": "🔮 Читаю карти…",
         "error_generic": "Не вдалося прочитати карти. Спробуй ще раз за хвилину.",
         "offers_title": "Хочеш копнути глибше?",
-        "btn_future": "🔭 Додати майбутнє — ⭐{future}",
-        "btn_extra2": "➕ Дві уточнювальні карти — ⭐{extra2}",
-        "btn_extra5": "➕ П'ять уточнювальних карт — ⭐{extra5}",
-        "btn_extra3": "➕ Ще 3 карти (до п'яти) — ⭐{extra3}",
-        "btn_context": "✍️ Розклад під ситуацію — ⭐{context}",
+        "btn_future": "🔭 Погляд у майбутнє",
+        "btn_extra2": "🃏 Дві уточнювальні карти",
+        "btn_extra5": "🃏 П'ять уточнювальних карт",
+        "btn_extra3": "🃏 Ще 3 карти (до п'яти)",
+        "btn_context": "✍️ Розклад під ситуацію",
+        "price_suffix": " — ⭐{stars}",
         "context_prompt": (
             "✍️ Опиши ситуацію в повідомленні — я зроблю окремий розклад із трьох карт "
-            "саме під неї (⭐{context}). /cancel — скасувати."
+            "саме під неї. /cancel — скасувати."
         ),
         "context_header": "🔮 <b>Розклад під твою ситуацію</b>",
         "future_header": "🔭 <b>Погляд у майбутнє</b>",

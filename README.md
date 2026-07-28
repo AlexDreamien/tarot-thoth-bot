@@ -11,18 +11,23 @@ sober, concrete explanation of the situation as the cards describe it.
 - **Multilingual** — Russian, Ukrainian, English, switchable with `/lang`.
 - **Readings by Claude** (Opus 4.8) via the Anthropic API.
 - **Card images** composited from bundled per-card art.
-- **Paid add-ons** via Telegram Stars ⭐ (see below).
+- **Personal archive** — `/history` shows a calendar of your past readings to revisit.
+- **Add-ons** offered after every spread (see below).
 
-## Paid add-ons (Telegram Stars)
+## Add-ons
 
-Offered after a spread:
+Offered as buttons after a spread. They're **free by default**; set
+`PAYMENTS_ENABLED=true` to sell them for Telegram Stars ⭐ instead (the price in
+parentheses).
 
-| Add-on | What it does | Price |
+| Add-on | What it does | Stars |
 |---|---|---|
-| **Reading for a situation** | Describe a situation in words → a fresh three-card spread read specifically for it (current disposition, no prediction). | ⭐3 |
-| **A look at the future** | Extends an existing spread with a forward-looking reading. | ⭐1 |
-| **Two clarifying cards** | Adds 2 cards to a spread and reads them within it. | ⭐2 |
-| **Five clarifying cards** | Adds 5 cards to a spread and reads them within it. | ⭐5 |
+| **Reading for a situation** | Describe a situation in words → a fresh three-card spread read specifically for it (current disposition, no prediction). Unlimited per day. | ⭐3 |
+| **A look at the future** | Extends a spread with a forward-looking reading. Once per spread. | ⭐1 |
+| **Clarifying cards** | Add cards to a spread and read them within it: +2 (⭐2) or +5 (⭐5); after a +2, a +3 top-up (⭐3) reaches five. Once each per spread. | ⭐2–5 |
+
+Each add-on (future, clarifying cards) is once per spread; a context reading is a
+fresh independent spread with its own add-ons.
 
 ## Build & run
 

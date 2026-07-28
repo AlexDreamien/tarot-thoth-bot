@@ -22,7 +22,12 @@ class Config:
     tz: str
     db_path: str
     default_lang: str
+    payments_enabled: bool = field(default=False)
     anthropic_key_present: bool = field(default=False)
+
+
+def _parse_bool(raw: str) -> bool:
+    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 def _parse_admin_ids(raw: str) -> frozenset[int]:
@@ -51,5 +56,6 @@ def load_config() -> Config:
         tz=os.getenv("TZ", "Europe/Kyiv").strip(),
         db_path=os.getenv("DB_PATH", "tarot.db").strip(),
         default_lang=default_lang,
+        payments_enabled=_parse_bool(os.getenv("PAYMENTS_ENABLED", "false")),
         anthropic_key_present=bool(os.getenv("ANTHROPIC_API_KEY", "").strip()),
     )

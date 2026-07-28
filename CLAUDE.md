@@ -83,11 +83,18 @@ python tools/generate_cards.py  # regenerate the 78 card images
   when `thinking` is omitted). The system prompt tells it to answer directly, no
   thinking aloud — because with thinking off Opus 4.8 can otherwise leak
   reasoning into the visible text. Keep that instruction if you change the call.
-- **Telegram Stars invoices use `currency="XTR"` and an empty `provider_token`.**
-  Product codes (`context_reading`, `future`, `extra_2`, `extra_5`) are embedded
-  in the invoice payload and persisted in `purchases`, so keep them stable
-  (`pricing.py`). Payloads are `"{product}:{spread_id}"`, or `"{product}:ctx"`
-  for the context flow.
+- **Add-ons are gated by `cfg.payments_enabled` (env `PAYMENTS_ENABLED`,
+  default off).** Off → tapping a button delivers the add-on **for free**
+  immediately (`payments._deliver_addon` / `_deliver_context`); on → it's sold
+  for Telegram Stars. Both paths share the same delivery helpers and the same
+  once-per-spread rules. Keep the paid path working behind the flag — don't
+  delete it. Button labels come from `offers_keyboard(..., paid)`: icon + text,
+  with a `— ⭐N` (`price_suffix`) appended only when `paid`.
+- **Telegram Stars invoices (paid mode) use `currency="XTR"` and an empty
+  `provider_token`.** Product codes (`context_reading`, `future`, `extra_2`,
+  `extra_3`, `extra_5`) are embedded in the invoice payload and persisted in
+  `purchases`, so keep them stable (`pricing.py`). Payloads are
+  `"{product}:{spread_id}"`, or `"{product}:ctx"` for the context flow.
 - **Up-sell model: per-spread add-ons; buttons re-appear after every paid
   message showing only what's still valid.** `future` is once per spread.
   Clarifying cards are a **tiered upgrade toward five total**: with none bought,

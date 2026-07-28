@@ -42,4 +42,5 @@ async def cmd_tarot(message: Message, db: Database, cfg: Config, interp: Interpr
         header=t(lang, "daily_header", date=day),
         spread_id=row["id"],
         available=await available_for_spread(db, row["id"]),
+        paid=cfg.payments_enabled,
     )

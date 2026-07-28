@@ -19,6 +19,8 @@ primary_region = "fra"   # Frankfurt (closest large EU region); change if you pr
   DB_PATH = "/data/tarot.db"
   DEFAULT_LANG = "ru"
   CLAUDE_MODEL = "claude-opus-4-8"
+  # Add-ons are free right now; flip to "true" to sell them for Telegram Stars.
+  PAYMENTS_ENABLED = "false"
 
 [mounts]
   source = "tarot_data"

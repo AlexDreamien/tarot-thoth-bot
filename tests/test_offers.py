@@ -59,3 +59,10 @@ def test_offers_keyboard_renders_available_then_context():
     assert _datas(kb) == [f"buy:{pricing.FUTURE}:7", f"buy:{pricing.EXTRA_3}:7", "ctx"]
     # empty available → the "reading for a situation" button still shows
     assert _datas(offers_keyboard("en", 7, [])) == ["ctx"]
+
+
+def test_labels_hide_stars_when_free_and_show_them_when_paid():
+    free = offers_keyboard("ru", 1, [pricing.FUTURE], paid=False).inline_keyboard[0][0].text
+    paid = offers_keyboard("ru", 1, [pricing.FUTURE], paid=True).inline_keyboard[0][0].text
+    assert "⭐" not in free
+    assert "⭐" in paid and str(pricing.price(pricing.FUTURE)) in paid

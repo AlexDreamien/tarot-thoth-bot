@@ -9,7 +9,6 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from .. import pricing
 from ..config import Config
 from ..db import Database
 from ..i18n import LANGS, t
@@ -17,16 +16,6 @@ from ..keyboards import lang_keyboard
 from ..service import get_lang
 
 router = Router()
-
-
-def _help_prices() -> dict[str, int]:
-    p = pricing.PRICES_STARS
-    return {
-        "context": p[pricing.CONTEXT_READING],
-        "future": p[pricing.FUTURE],
-        "extra2": p[pricing.EXTRA_2],
-        "extra5": p[pricing.EXTRA_5],
-    }
 
 
 @router.message(Command("start"))
@@ -44,7 +33,7 @@ async def cmd_help(message: Message, db: Database, cfg: Config) -> None:
     if message.from_user is None:
         return
     lang = await get_lang(db, message.from_user.id, cfg.default_lang)
-    await message.answer(t(lang, "help", **_help_prices()))
+    await message.answer(t(lang, "help"))
 
 
 @router.message(Command("lang"))
