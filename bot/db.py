@@ -15,6 +15,8 @@ import sqlite3
 import threading
 from datetime import UTC, datetime
 
+DEFAULT_REMINDER_HOUR = 9  # 09:00 local, unless the user changes it
+
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
@@ -88,14 +90,29 @@ class Database:
             );
             """)
         self._add_column("users", "name", "TEXT")
+        # Reminder settings. reminder_hour NULL == reminders off (those users
+        # get the weekly silent nudge instead); tz_offset_min NULL == use the
+        # bot's configured TZ.
+        if self._add_column("users", "reminder_hour", "INTEGER"):
+            self.conn.execute("UPDATE users SET reminder_hour=?", (DEFAULT_REMINDER_HOUR,))
+        self._add_column("users", "tz_offset_min", "INTEGER")
+        self._add_column("users", "last_reminder_day", "TEXT")
+        self._add_column("users", "last_weekly_day", "TEXT")
+        # Expanded ("tell me more") interpretations, generated on demand.
+        self._add_column("spreads", "long_text", "TEXT")
+        self._add_column("spreads", "future_long_text", "TEXT")
+        self._add_column("extra_draws", "long_text", "TEXT")
         self.conn.commit()
 
-    def _add_column(self, table: str, col: str, decl: str) -> None:
+    def _add_column(self, table: str, col: str, decl: str) -> bool:
         """Add a column to an existing table if it's missing (forward migration
-        for databases created before the column existed)."""
+        for databases created before the column existed). Returns True if the
+        column was actually added."""
         existing = {r["name"] for r in self.conn.execute(f"PRAGMA table_info({table})")}
-        if col not in existing:
-            self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+        if col in existing:
+            return False
+        self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+        return True
 
     # --- users -----------------------------------------------------------
 
@@ -110,8 +127,9 @@ class Database:
                     self.conn.commit()
                 return row["lang"]
             self.conn.execute(
-                "INSERT INTO users(user_id, lang, name, created_at) VALUES(?,?,?,?)",
-                (user_id, default_lang, name, _now()),
+                """INSERT INTO users(user_id, lang, name, reminder_hour, created_at)
+                   VALUES(?,?,?,?,?)""",
+                (user_id, default_lang, name, DEFAULT_REMINDER_HOUR, _now()),
             )
             self.conn.commit()
             return default_lang
@@ -125,6 +143,52 @@ class Database:
         with self._lock:
             self.conn.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))
             self.conn.commit()
+
+    # --- reminder settings / scheduling ----------------------------------
+
+    def get_user(self, user_id: int) -> sqlite3.Row | None:
+        with self._lock:
+            return self.conn.execute("SELECT * FROM users WHERE user_id=?", (user_id,)).fetchone()
+
+    def set_reminder_hour(self, user_id: int, hour: int | None) -> None:
+        """``hour`` 0..23, or None to switch daily reminders off."""
+        with self._lock:
+            self.conn.execute("UPDATE users SET reminder_hour=? WHERE user_id=?", (hour, user_id))
+            self.conn.commit()
+
+    def set_tz_offset(self, user_id: int, minutes: int | None) -> None:
+        """UTC offset in minutes, or None to follow the bot's configured TZ."""
+        with self._lock:
+            self.conn.execute(
+                "UPDATE users SET tz_offset_min=? WHERE user_id=?", (minutes, user_id)
+            )
+            self.conn.commit()
+
+    def all_users_for_scheduling(self) -> list[sqlite3.Row]:
+        with self._lock:
+            return self.conn.execute("""SELECT user_id, lang, reminder_hour, tz_offset_min,
+                          last_reminder_day, last_weekly_day
+                   FROM users""").fetchall()
+
+    def mark_reminder_sent(self, user_id: int, day: str) -> None:
+        with self._lock:
+            self.conn.execute(
+                "UPDATE users SET last_reminder_day=? WHERE user_id=?", (day, user_id)
+            )
+            self.conn.commit()
+
+    def mark_weekly_sent(self, user_id: int, day: str) -> None:
+        with self._lock:
+            self.conn.execute("UPDATE users SET last_weekly_day=? WHERE user_id=?", (day, user_id))
+            self.conn.commit()
+
+    def has_daily_spread(self, user_id: int, day: str) -> bool:
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT 1 FROM spreads WHERE user_id=? AND day=? AND kind='daily' LIMIT 1",
+                (user_id, day),
+            ).fetchone()
+        return row is not None
 
     # --- spreads ---------------------------------------------------------
 
@@ -172,6 +236,25 @@ class Database:
         with self._lock:
             self.conn.execute("UPDATE spreads SET interpretation=? WHERE id=?", (text, spread_id))
             self.conn.commit()
+
+    def set_spread_long(self, spread_id: int, text: str) -> None:
+        with self._lock:
+            self.conn.execute("UPDATE spreads SET long_text=? WHERE id=?", (text, spread_id))
+            self.conn.commit()
+
+    def set_future_long(self, spread_id: int, text: str) -> None:
+        with self._lock:
+            self.conn.execute("UPDATE spreads SET future_long_text=? WHERE id=?", (text, spread_id))
+            self.conn.commit()
+
+    def set_extra_long(self, extra_id: int, text: str) -> None:
+        with self._lock:
+            self.conn.execute("UPDATE extra_draws SET long_text=? WHERE id=?", (text, extra_id))
+            self.conn.commit()
+
+    def get_extra(self, extra_id: int) -> sqlite3.Row | None:
+        with self._lock:
+            return self.conn.execute("SELECT * FROM extra_draws WHERE id=?", (extra_id,)).fetchone()
 
     def set_future(self, spread_id: int, text: str) -> None:
         with self._lock:

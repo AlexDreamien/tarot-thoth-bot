@@ -21,7 +21,7 @@ _LANG_INSTRUCTION = {
     "en": "English",
 }
 
-_SYSTEM = (
+_BASE = (
     "You are an experienced reader of the Thoth Tarot (Crowley–Harris deck). "
     "You interpret a spread as a picture of the querent's CURRENT disposition — "
     "the forces, tensions and standing of the situation right now. "
@@ -30,16 +30,31 @@ _SYSTEM = (
     "reading in the Thoth meaning of the specific cards drawn. "
     "Write in {lang}. Refer to the cards by their names in that language. "
     "Answer directly with the interpretation — no preamble, no thinking aloud, "
-    "no bullet-point disclaimers. Keep it to a few tight paragraphs."
+    "no bullet-point disclaimers. "
 )
 
-_FUTURE_SYSTEM = (
+# Default voice: short. The querent can pay/tap to expand, so the first read
+# must be tight — a taste, not the whole essay.
+_BRIEF = (
+    "Be BRIEF: 3–5 sentences, one short paragraph, under 600 characters. "
+    "Name the cards and say what they describe together. No card-by-card "
+    "walkthrough, no filler, no restating the question."
+)
+
+_DEEP = (
+    "This is the EXPANDED reading the querent asked for after a short one. Go "
+    "deep: walk through each card's contribution, how they interact and qualify "
+    "one another, the tensions and the through-line. Four to six paragraphs. Do "
+    "not simply repeat the short reading — build on it with detail it omitted."
+)
+
+_FUTURE_BASE = (
     "You are an experienced reader of the Thoth Tarot (Crowley–Harris deck). "
     "This is the one reading where the querent has explicitly asked you to look "
     "AHEAD: given the spread already laid, describe the likely trajectory and "
     "where these forces are heading. Stay grounded in the Thoth meanings of the "
     "cards; be concrete, not vague or grandiose. "
-    "Write in {lang}. Answer directly, no preamble."
+    "Write in {lang}. Answer directly, no preamble. "
 )
 
 
@@ -58,12 +73,25 @@ def _cards_block(card_ids: list[str], lang: str) -> str:
     return "\n".join(_card_brief(get_card(cid), lang) for cid in card_ids)
 
 
-def system_prompt(lang: str) -> str:
-    return _SYSTEM.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
+def system_prompt(lang: str, deep: bool = False) -> str:
+    """Reader persona. Brief by default; ``deep`` is the expanded reading."""
+    base = _BASE.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
+    return base + (_DEEP if deep else _BRIEF)
 
 
-def future_system_prompt(lang: str) -> str:
-    return _FUTURE_SYSTEM.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
+def future_system_prompt(lang: str, deep: bool = False) -> str:
+    base = _FUTURE_BASE.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
+    return base + (_DEEP if deep else _BRIEF)
+
+
+def build_expand_user(context_block: str, short_text: str) -> str:
+    """Ask for the expanded version of a reading already given briefly."""
+    return (
+        f"{context_block}\n\n"
+        "The querent was given this SHORT reading:\n"
+        f"«{short_text.strip()}»\n\n"
+        "They have now asked for the full, expanded reading of the same cards."
+    )
 
 
 def build_daily_user(card_ids: list[str], lang: str) -> str:
@@ -126,14 +154,24 @@ class Interpreter:
         self._model = model
         self._max_tokens = max_tokens
 
-    async def _complete(self, system: str, user: str) -> str:
+    async def _complete(self, system: str, user: str, max_tokens: int | None = None) -> str:
         resp = await self._client.messages.create(
             model=self._model,
-            max_tokens=self._max_tokens,
+            max_tokens=max_tokens or self._max_tokens,
             system=system,
             messages=[{"role": "user", "content": user}],
         )
         return "".join(b.text for b in resp.content if b.type == "text").strip()
+
+    async def expand(
+        self, context_block: str, short_text: str, lang: str, *, future: bool = False
+    ) -> str:
+        """The expanded reading of cards already read briefly. ``context_block``
+        is the original user prompt (from one of the ``build_*_user`` helpers)."""
+        system = future_system_prompt(lang, deep=True) if future else system_prompt(lang, deep=True)
+        return await self._complete(
+            system, build_expand_user(context_block, short_text), max_tokens=2500
+        )
 
     async def daily(self, card_ids: list[str], lang: str) -> str:
         return await self._complete(system_prompt(lang), build_daily_user(card_ids, lang))

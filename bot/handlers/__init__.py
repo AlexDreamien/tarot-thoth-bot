@@ -6,6 +6,12 @@ from aiogram import Router
 
 
 def all_routers() -> list[Router]:
-    from . import common, history, payments, spread
+    from . import common, history, payments, settings, spread
 
-    return [common.router, spread.router, history.router, payments.router]
+    return [
+        common.router,
+        spread.router,
+        history.router,
+        settings.router,
+        payments.router,
+    ]

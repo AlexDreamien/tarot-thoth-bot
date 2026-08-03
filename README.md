@@ -11,6 +11,11 @@ sober, concrete explanation of the situation as the cards describe it.
 - **Multilingual** — Russian, Ukrainian, English, switchable with `/lang`.
 - **Readings by Claude** (Opus 4.8) via the Anthropic API.
 - **Card images** composited from bundled per-card art.
+- **Brief by default** — readings are a tight paragraph; an "expand this reading"
+  button gives the full, detailed version of *any* reading (spread, future, or
+  clarifying cards).
+- **Daily reminder** — an offer to draw, at an hour you choose in your own time
+  zone (`/settings`). Turn it off and you still get one silent nudge a week.
 - **Personal archive** — `/history` shows a calendar of your past readings to revisit.
 - **Add-ons** offered after every spread (see below).
 
@@ -25,6 +30,7 @@ parentheses).
 | **Reading for a situation** | Describe a situation in words → a fresh three-card spread read specifically for it (current disposition, no prediction). Unlimited per day. | ⭐3 |
 | **A look at the future** | Extends a spread with a forward-looking reading. Once per spread. | ⭐1 |
 | **Clarifying cards** | Add cards to a spread and read them within it: +2 (⭐2) or +5 (⭐5); after a +2, a +3 top-up (⭐3) reaches five. Once each per spread. | ⭐2–5 |
+| **Expand this reading** | The full, detailed version of a reading given briefly. Offered after every reading — spread, future, or clarifying cards. | ⭐1 |
 
 Each add-on (future, clarifying cards) is once per spread; a context reading is a
 fresh independent spread with its own add-ons.

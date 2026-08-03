@@ -1,4 +1,5 @@
-"""The free daily three-card spread: /tarot (and /start's natural next step)."""
+"""The free daily three-card spread: /tarot, and the shared delivery helper the
+"reading for a new day" button reuses."""
 
 from __future__ import annotations
 
@@ -18,18 +19,20 @@ from .render import deliver_spread
 router = Router()
 
 
-@router.message(Command("tarot"))
-async def cmd_tarot(message: Message, db: Database, cfg: Config, interp: Interpreter) -> None:
-    if message.from_user is None:
-        return
-    lang = await get_lang(
-        db, message.from_user.id, cfg.default_lang, name=message.from_user.full_name
-    )
+async def deliver_daily(
+    message: Message,
+    db: Database,
+    cfg: Config,
+    interp: Interpreter,
+    lang: str,
+    user_id: int,
+) -> None:
+    """Draw (or re-send) today's spread and deliver it with the action buttons."""
     day = day_key(cfg.tz)
     await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
         row, interpretation = await ensure_daily_spread(
-            db, interp, user_id=message.from_user.id, day=day, lang=lang
+            db, interp, user_id=user_id, day=day, lang=lang
         )
     except Exception:
         await message.answer(t(lang, "error_generic"))
@@ -43,4 +46,15 @@ async def cmd_tarot(message: Message, db: Database, cfg: Config, interp: Interpr
         spread_id=row["id"],
         available=await available_for_spread(db, row["id"]),
         paid=cfg.payments_enabled,
+        expand_cb=f"exp:s:{row['id']}",
     )
+
+
+@router.message(Command("tarot"))
+async def cmd_tarot(message: Message, db: Database, cfg: Config, interp: Interpreter) -> None:
+    if message.from_user is None:
+        return
+    lang = await get_lang(
+        db, message.from_user.id, cfg.default_lang, name=message.from_user.full_name
+    )
+    await deliver_daily(message, db, cfg, interp, lang, message.from_user.id)

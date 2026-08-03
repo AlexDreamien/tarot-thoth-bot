@@ -54,11 +54,23 @@ def test_state_direct_five(tmp_path):
         db.close()
 
 
-def test_offers_keyboard_renders_available_then_context():
+def test_offers_keyboard_renders_available_then_context_then_newday():
     kb = offers_keyboard("en", 7, [pricing.FUTURE, pricing.EXTRA_3])
-    assert _datas(kb) == [f"buy:{pricing.FUTURE}:7", f"buy:{pricing.EXTRA_3}:7", "ctx"]
-    # empty available → the "reading for a situation" button still shows
-    assert _datas(offers_keyboard("en", 7, [])) == ["ctx"]
+    assert _datas(kb) == [
+        f"buy:{pricing.FUTURE}:7",
+        f"buy:{pricing.EXTRA_3}:7",
+        "ctx",
+        "newday",
+    ]
+    # empty available → situation + new-day buttons still show
+    assert _datas(offers_keyboard("en", 7, [])) == ["ctx", "newday"]
+
+
+def test_expand_button_is_first_when_offered():
+    kb = offers_keyboard("en", 7, [pricing.FUTURE], expand_cb="exp:s:7")
+    assert _datas(kb) == ["exp:s:7", f"buy:{pricing.FUTURE}:7", "ctx", "newday"]
+    # no expand target → no expand button
+    assert "exp:s:7" not in _datas(offers_keyboard("en", 7, [pricing.FUTURE]))
 
 
 def test_labels_hide_stars_when_free_and_show_them_when_paid():

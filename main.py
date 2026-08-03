@@ -16,10 +16,12 @@ from bot.config import load_config
 from bot.db import Database
 from bot.handlers import all_routers
 from bot.interpret import Interpreter
+from bot.scheduler import ReminderScheduler
 
 _COMMANDS = [
     BotCommand(command="tarot", description="Расклад на сегодня / Today's spread"),
     BotCommand(command="history", description="Мои расклады / My readings"),
+    BotCommand(command="settings", description="Напоминания / Reminders"),
     BotCommand(command="help", description="Как это работает / How it works"),
     BotCommand(command="lang", description="Язык / Language"),
 ]
@@ -49,10 +51,13 @@ async def main() -> None:
         dp.include_router(router)
 
     await _set_commands(bot)
+    scheduler = ReminderScheduler(bot, db, cfg)
+    scheduler.start()
     logging.info("Tarot Thoth bot started (model=%s, tz=%s)", cfg.claude_model, cfg.tz)
     try:
         await dp.start_polling(bot)
     finally:
+        await scheduler.shutdown()
         db.close()
 
 

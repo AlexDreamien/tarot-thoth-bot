@@ -13,6 +13,7 @@ FUTURE = "future"
 EXTRA_2 = "extra_2"
 EXTRA_5 = "extra_5"
 EXTRA_3 = "extra_3"  # top-up from two to five clarifying cards
+EXPAND = "expand"  # the full, expanded version of a reading given briefly
 
 PRICES_STARS = {
     CONTEXT_READING: 3,  # describe a situation → a fresh 3-card spread for it
@@ -20,6 +21,7 @@ PRICES_STARS = {
     EXTRA_2: 2,  # two clarifying cards added to a spread
     EXTRA_5: 5,  # five clarifying cards added to a spread
     EXTRA_3: 3,  # three more cards after a +2, reaching five total (2+3 == 5)
+    EXPAND: 1,  # expand any one reading (per spread / per clarifying draw)
 }
 
 # How many extra cards each "extra" product adds.

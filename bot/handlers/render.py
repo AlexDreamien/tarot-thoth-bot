@@ -29,13 +29,15 @@ async def send_offers(
     spread_id: int,
     available: list[str],
     paid: bool,
+    expand_cb: str | None = None,
 ) -> None:
     """Show the action keyboard for a spread. ``available`` comes from
-    ``service.available_addons``; ``paid`` adds Stars prices to the labels.
-    Called after the daily spread and after every add-on message."""
+    ``service.available_addons``; ``paid`` adds Stars prices to the labels;
+    ``expand_cb`` offers expanding the reading just sent. Called after the daily
+    spread and after every add-on message."""
     await message.answer(
         t(lang, "offers_title"),
-        reply_markup=offers_keyboard(lang, spread_id, available, paid),
+        reply_markup=offers_keyboard(lang, spread_id, available, paid, expand_cb),
     )
 
 
@@ -49,9 +51,17 @@ async def deliver_spread(
     spread_id: int,
     available: list[str],
     paid: bool,
+    expand_cb: str | None = None,
 ) -> None:
     """Photo (header + card names) → interpretation text → action keyboard."""
     caption = f"{header}\n{t(lang, 'cards_line', cards=cards_line(lang, card_ids))}"
     await send_cards_photo(message, card_ids, caption)
     await message.answer(interpretation)
-    await send_offers(message, lang=lang, spread_id=spread_id, available=available, paid=paid)
+    await send_offers(
+        message,
+        lang=lang,
+        spread_id=spread_id,
+        available=available,
+        paid=paid,
+        expand_cb=expand_cb,
+    )

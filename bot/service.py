@@ -14,6 +14,7 @@ import hashlib
 import sqlite3
 
 from . import deck, pricing
+from . import interpret as interpret_mod
 from .db import Database, split_cards
 from .interpret import Interpreter
 
@@ -127,15 +128,76 @@ async def ensure_future(db: Database, interp: Interpreter, *, spread_id: int, la
     return text
 
 
+async def ensure_spread_expanded(
+    db: Database, interp: Interpreter, *, spread_id: int, lang: str
+) -> str | None:
+    """Expanded version of a spread's own (brief) reading. Cached in
+    ``spreads.long_text``. Returns None if the spread has no reading yet."""
+    row = await asyncio.to_thread(db.get_spread, spread_id)
+    if row is None or not row["interpretation"]:
+        return None
+    if row["long_text"]:
+        return row["long_text"]
+    cards = split_cards(row["card_ids"])
+    if row["kind"] == "context":
+        context_block = interpret_mod.build_context_user(cards, row["situation"] or "", lang)
+    else:
+        context_block = interpret_mod.build_daily_user(cards, lang)
+    text = await interp.expand(context_block, row["interpretation"], lang)
+    await asyncio.to_thread(db.set_spread_long, spread_id, text)
+    return text
+
+
+async def ensure_future_expanded(
+    db: Database, interp: Interpreter, *, spread_id: int, lang: str
+) -> str | None:
+    """Expanded version of a spread's future reading. Cached in
+    ``spreads.future_long_text``."""
+    row = await asyncio.to_thread(db.get_spread, spread_id)
+    if row is None or not row["future_text"]:
+        return None
+    if row["future_long_text"]:
+        return row["future_long_text"]
+    context_block = interpret_mod.build_future_user(
+        split_cards(row["card_ids"]), row["interpretation"] or "", lang
+    )
+    text = await interp.expand(context_block, row["future_text"], lang, future=True)
+    await asyncio.to_thread(db.set_future_long, spread_id, text)
+    return text
+
+
+async def ensure_extra_expanded(
+    db: Database, interp: Interpreter, *, extra_id: int, lang: str
+) -> str | None:
+    """Expanded version of a clarifying draw's reading. Cached in
+    ``extra_draws.long_text``."""
+    extra = await asyncio.to_thread(db.get_extra, extra_id)
+    if extra is None or not extra["interpretation"]:
+        return None
+    if extra["long_text"]:
+        return extra["long_text"]
+    row = await asyncio.to_thread(db.get_spread, extra["spread_id"])
+    context_block = interpret_mod.build_extra_user(
+        split_cards(row["card_ids"]),
+        row["interpretation"] or "",
+        split_cards(extra["card_ids"]),
+        lang,
+    )
+    text = await interp.expand(context_block, extra["interpretation"], lang)
+    await asyncio.to_thread(db.set_extra_long, extra_id, text)
+    return text
+
+
 async def ensure_extra(
     db: Database, interp: Interpreter, *, spread_id: int, count: int, lang: str
-) -> tuple[list[str], str]:
-    """Paid clarifying cards (+2, +5, or +3 top-up) added to a spread and read
+) -> tuple[int, list[str], str]:
+    """Clarifying cards (+2, +5, or +3 top-up) added to a spread and read
     within it.
 
     The draw excludes the spread's own cards AND any clarifying cards already
     drawn for it, so a +3 top-up never repeats the +2 cards. Deterministic per
-    (spread scope, count). Returns (extra_card_ids, interpretation)."""
+    (spread scope, count). Returns (extra_id, extra_card_ids, interpretation) —
+    the id is what the "expand" button targets."""
     row = await asyncio.to_thread(db.get_spread, spread_id)
     base_cards = split_cards(row["card_ids"])
     prior_extra = await asyncio.to_thread(db.all_extra_cards, spread_id)
@@ -145,7 +207,7 @@ async def ensure_extra(
         db.get_or_create_extra, spread_id=spread_id, count=count, card_ids=extra_cards
     )
     if extra["interpretation"]:
-        return split_cards(extra["card_ids"]), extra["interpretation"]
+        return extra["id"], split_cards(extra["card_ids"]), extra["interpretation"]
     text = await interp.extra(base_cards, row["interpretation"] or "", extra_cards, lang)
     await asyncio.to_thread(db.set_extra_interpretation, extra["id"], text)
-    return extra_cards, text
+    return extra["id"], extra_cards, text

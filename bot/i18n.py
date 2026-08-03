@@ -44,7 +44,32 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_extra5": "🃏 Five clarifying cards",
         "btn_extra3": "🃏 Three more cards (up to five)",
         "btn_context": "✍️ Read a specific situation",
+        "btn_expand": "🔍 Expand this reading",
+        "btn_newday": "🌅 Reading for a new day",
         "price_suffix": " — ⭐{stars}",
+        "expand_header": "🔍 <b>In full</b>",
+        "already_expanded": "This reading is already expanded.",
+        "newday_already": (
+            "🌅 You already have today's reading. A new one comes tomorrow — "
+            "but you can lay a spread for a specific situation right now."
+        ),
+        "invoice_title_expand": "Expanded reading",
+        "invoice_desc_expand": "The full, detailed version of this reading.",
+        "settings_title": (
+            "⚙️ <b>Daily reminder</b>\n\nNow: {state}\n\n"
+            "I'll offer you a reading each day at the chosen hour."
+        ),
+        "settings_state_on": "every day at {hour}:00 (UTC{offset})",
+        "settings_state_off": "off — I'll nudge you once a week instead",
+        "btn_set_time": "🕘 Reminder time",
+        "btn_set_tz": "🌍 Time zone (now UTC{offset})",
+        "btn_reminder_off": "🔕 Turn reminders off",
+        "btn_reminder_on": "🔔 Turn reminders on",
+        "pick_hour": "Pick the hour (your local time):",
+        "pick_tz": "Pick your UTC offset:",
+        "settings_saved": "✅ Saved: {state}",
+        "reminder_msg": "🌅 Good morning! Your Thoth reading for today is ready to be drawn.",
+        "weekly_msg": "🔮 It's been a while — want a reading? Reminders are off; /settings to change.",
         "context_prompt": (
             "✍️ Describe the situation in a message, and I'll lay a fresh three-card "
             "spread read specifically for it. Send /cancel to abort."
@@ -106,7 +131,32 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_extra5": "🃏 Пять уточняющих карт",
         "btn_extra3": "🃏 Ещё 3 карты (до пяти)",
         "btn_context": "✍️ Расклад под ситуацию",
+        "btn_expand": "🔍 Раскрыть подробнее",
+        "btn_newday": "🌅 Расклад на новый день",
         "price_suffix": " — ⭐{stars}",
+        "expand_header": "🔍 <b>Подробно</b>",
+        "already_expanded": "Это толкование уже раскрыто.",
+        "newday_already": (
+            "🌅 Расклад на сегодня у тебя уже есть — новый будет завтра. "
+            "Но прямо сейчас можно сделать расклад под конкретную ситуацию."
+        ),
+        "invoice_title_expand": "Развёрнутое толкование",
+        "invoice_desc_expand": "Полная, подробная версия этого толкования.",
+        "settings_title": (
+            "⚙️ <b>Ежедневное напоминание</b>\n\nСейчас: {state}\n\n"
+            "Каждый день в выбранный час буду предлагать тебе расклад."
+        ),
+        "settings_state_on": "каждый день в {hour}:00 (UTC{offset})",
+        "settings_state_off": "выключено — напомню раз в неделю",
+        "btn_set_time": "🕘 Время напоминания",
+        "btn_set_tz": "🌍 Часовой пояс (сейчас UTC{offset})",
+        "btn_reminder_off": "🔕 Выключить напоминания",
+        "btn_reminder_on": "🔔 Включить напоминания",
+        "pick_hour": "Выбери час (по твоему местному времени):",
+        "pick_tz": "Выбери свой сдвиг от UTC:",
+        "settings_saved": "✅ Сохранено: {state}",
+        "reminder_msg": "🌅 Доброе утро! Расклад Таро Тота на сегодня ждёт тебя.",
+        "weekly_msg": "🔮 Давно не виделись — сделаем расклад? Напоминания выключены, /settings — изменить.",
         "context_prompt": (
             "✍️ Опиши ситуацию в сообщении — я сделаю отдельный расклад из трёх карт "
             "именно под неё. /cancel — отменить."
@@ -168,7 +218,32 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_extra5": "🃏 П'ять уточнювальних карт",
         "btn_extra3": "🃏 Ще 3 карти (до п'яти)",
         "btn_context": "✍️ Розклад під ситуацію",
+        "btn_expand": "🔍 Розкрити докладніше",
+        "btn_newday": "🌅 Розклад на новий день",
         "price_suffix": " — ⭐{stars}",
+        "expand_header": "🔍 <b>Докладно</b>",
+        "already_expanded": "Це тлумачення вже розкрито.",
+        "newday_already": (
+            "🌅 Розклад на сьогодні в тебе вже є — новий буде завтра. "
+            "Але просто зараз можна зробити розклад під конкретну ситуацію."
+        ),
+        "invoice_title_expand": "Розгорнуте тлумачення",
+        "invoice_desc_expand": "Повна, докладна версія цього тлумачення.",
+        "settings_title": (
+            "⚙️ <b>Щоденне нагадування</b>\n\nЗараз: {state}\n\n"
+            "Щодня о вибраній годині пропонуватиму тобі розклад."
+        ),
+        "settings_state_on": "щодня о {hour}:00 (UTC{offset})",
+        "settings_state_off": "вимкнено — нагадаю раз на тиждень",
+        "btn_set_time": "🕘 Час нагадування",
+        "btn_set_tz": "🌍 Часовий пояс (зараз UTC{offset})",
+        "btn_reminder_off": "🔕 Вимкнути нагадування",
+        "btn_reminder_on": "🔔 Увімкнути нагадування",
+        "pick_hour": "Обери годину (за твоїм місцевим часом):",
+        "pick_tz": "Обери свій зсув від UTC:",
+        "settings_saved": "✅ Збережено: {state}",
+        "reminder_msg": "🌅 Доброго ранку! Розклад Таро Тота на сьогодні чекає на тебе.",
+        "weekly_msg": "🔮 Давно не бачились — зробимо розклад? Нагадування вимкнені, /settings — змінити.",
         "context_prompt": (
             "✍️ Опиши ситуацію в повідомленні — я зроблю окремий розклад із трьох карт "
             "саме під неї. /cancel — скасувати."

@@ -114,6 +114,27 @@ python tools/generate_cards.py  # regenerate the 78 card images
   (payloads are ≤128 bytes). `ContextFlow.waiting_situation` → the user's text is
   stored via `state.update_data(situation=...)` → invoice → on
   `successful_payment` the handler reads it back and clears state.
+- **Readings are BRIEF by default; "expand" is a separate, cached generation.**
+  `interpret.system_prompt(lang)` appends `_BRIEF` (3–5 sentences); the expand
+  path uses `system_prompt(lang, deep=True)` + `Interpreter.expand(...)`, which
+  is fed the original `build_*_user` block plus the short text so it deepens
+  rather than repeats. Each target caches separately: `spreads.long_text`,
+  `spreads.future_long_text`, `extra_draws.long_text`. Callbacks are
+  `exp:s:<spread_id>` / `exp:f:<spread_id>` / `exp:e:<extra_id>` — every message
+  carrying a reading passes its own `expand_cb` to `send_offers`.
+- **`newday` button is on every action keyboard.** If the user already has a
+  daily spread for `day_key(cfg.tz)` (`db.has_daily_spread`) it answers with
+  `newday_already` and drops into the situation flow; otherwise it delivers the
+  free daily spread via `handlers.spread.deliver_daily` (shared with `/tarot`).
+- **Reminders: `scheduler.due_reminders` is the pure, tested decision core**; the
+  APScheduler tick (every `TICK_MINUTES`) only does IO. Telegram never exposes a
+  user's time zone — the user picks a UTC offset in `/settings`
+  (`users.tz_offset_min`, NULL = the bot's `TZ`), and `users.reminder_hour` NULL
+  means reminders are **off**, which switches them to one *silent*
+  (`disable_notification=True`) nudge a week at `WEEKLY_HOUR` local. Guard rails:
+  `last_reminder_day` / `last_weekly_day` make it at most once per local day/week,
+  and a user who already drew today gets no ping. Never pass `next_run_time=None`
+  to `add_job` — that adds the job **paused** and nothing ever fires.
 - **`/history` is a per-user archive; every query is user-scoped in SQL.**
   `handlers/history.py` shows a month calendar (`keyboards.calendar_keyboard`,
   callbacks `hist:nav:YYYY-MM` / `hist:day:YYYY-MM-DD` / `hist:show:<id>` /

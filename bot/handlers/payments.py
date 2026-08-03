@@ -32,10 +32,14 @@ from ..service import (
     available_for_spread,
     ensure_context_spread,
     ensure_extra,
+    ensure_extra_expanded,
     ensure_future,
+    ensure_future_expanded,
+    ensure_spread_expanded,
     get_lang,
 )
 from .render import cards_line, deliver_spread, send_cards_photo, send_offers
+from .spread import deliver_daily
 
 router = Router()
 
@@ -46,6 +50,7 @@ _I18N_SUFFIX = {
     pricing.EXTRA_2: "extra2",
     pricing.EXTRA_5: "extra5",
     pricing.EXTRA_3: "extra3",
+    pricing.EXPAND: "expand",
 }
 
 
@@ -66,11 +71,14 @@ async def _deliver_future(message, db, interp, cfg, lang, spread_id):
         spread_id=spread_id,
         available=await available_for_spread(db, spread_id),
         paid=cfg.payments_enabled,
+        expand_cb=f"exp:f:{spread_id}",
     )
 
 
 async def _deliver_extra(message, db, interp, cfg, lang, spread_id, count):
-    extra_cards, text = await ensure_extra(db, interp, spread_id=spread_id, count=count, lang=lang)
+    extra_id, extra_cards, text = await ensure_extra(
+        db, interp, spread_id=spread_id, count=count, lang=lang
+    )
     caption = (
         f"{t(lang, 'extra_header', n=count)}\n"
         f"{t(lang, 'cards_line', cards=cards_line(lang, extra_cards))}"
@@ -83,6 +91,7 @@ async def _deliver_extra(message, db, interp, cfg, lang, spread_id, count):
         spread_id=spread_id,
         available=await available_for_spread(db, spread_id),
         paid=cfg.payments_enabled,
+        expand_cb=f"exp:e:{extra_id}",
     )
 
 
@@ -108,6 +117,7 @@ async def _deliver_context(message, db, interp, cfg, lang, user_id, situation):
         spread_id=row["id"],
         available=await available_for_spread(db, row["id"]),
         paid=cfg.payments_enabled,
+        expand_cb=f"exp:s:{row['id']}",
     )
 
 
@@ -150,6 +160,65 @@ async def cb_buy(callback: CallbackQuery, db: Database, cfg: Config, interp: Int
     except Exception:
         await callback.message.answer(t(lang, "error_generic"))
         raise
+
+
+async def _deliver_expand(message, db, interp, cfg, lang, kind: str, target_id: int) -> None:
+    """Send the expanded version of a reading (spread / future / clarifying)."""
+    if kind == "s":
+        text = await ensure_spread_expanded(db, interp, spread_id=target_id, lang=lang)
+    elif kind == "f":
+        text = await ensure_future_expanded(db, interp, spread_id=target_id, lang=lang)
+    else:
+        text = await ensure_extra_expanded(db, interp, extra_id=target_id, lang=lang)
+    if text:
+        await message.answer(f"{t(lang, 'expand_header')}\n\n{text}")
+
+
+@router.callback_query(F.data.startswith("exp:"))
+async def cb_expand(
+    callback: CallbackQuery, db: Database, cfg: Config, interp: Interpreter
+) -> None:
+    """Expand the reading this button was attached to. Free unless payments are
+    enabled, in which case it costs one Star."""
+    if callback.from_user is None or callback.data is None:
+        return
+    _, kind, target = callback.data.split(":", 2)
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    if not isinstance(callback.message, Message):
+        return
+    if cfg.payments_enabled:
+        await _send_invoice(
+            callback.message, lang, pricing.EXPAND, f"{pricing.EXPAND}:{kind}:{target}"
+        )
+        return
+    await callback.message.bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+    try:
+        await _deliver_expand(callback.message, db, interp, cfg, lang, kind, int(target))
+    except Exception:
+        await callback.message.answer(t(lang, "error_generic"))
+        raise
+
+
+@router.callback_query(F.data == "newday")
+async def cb_newday(
+    callback: CallbackQuery, db: Database, cfg: Config, interp: Interpreter, state: FSMContext
+) -> None:
+    """ "Reading for a new day": deliver today's free spread if the user hasn't
+    had one yet, otherwise offer a reading for a situation instead."""
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    if not isinstance(callback.message, Message):
+        return
+    day = day_key(cfg.tz)
+    if await asyncio.to_thread(db.has_daily_spread, callback.from_user.id, day):
+        await callback.message.answer(t(lang, "newday_already"))
+        await state.set_state(ContextFlow.waiting_situation)
+        await callback.message.answer(t(lang, "context_prompt"))
+        return
+    await deliver_daily(callback.message, db, cfg, interp, lang, callback.from_user.id)
 
 
 @router.callback_query(F.data == "ctx")
@@ -204,7 +273,7 @@ async def on_paid(
     if message.from_user is None or message.successful_payment is None:
         return
     sp = message.successful_payment
-    product, ref = sp.invoice_payload.split(":", 1)
+    product, ref = sp.invoice_payload.split(":", 1)  # ref: "<spread_id>" | "ctx" | "<kind>:<id>"
     lang = await get_lang(db, message.from_user.id, cfg.default_lang)
     await asyncio.to_thread(
         db.log_purchase,
@@ -219,6 +288,9 @@ async def on_paid(
             situation = (await state.get_data()).get("situation") or ""
             await state.clear()
             await _deliver_context(message, db, interp, cfg, lang, message.from_user.id, situation)
+        elif product == pricing.EXPAND:
+            kind, target = ref.split(":", 1)
+            await _deliver_expand(message, db, interp, cfg, lang, kind, int(target))
         else:
             await _deliver_addon(message, db, interp, cfg, lang, product, int(ref))
     except Exception:
