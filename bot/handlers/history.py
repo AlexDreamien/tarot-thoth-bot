@@ -19,7 +19,7 @@ from ..db import Database, split_cards
 from ..i18n import t
 from ..keyboards import calendar_keyboard, day_readings_keyboard
 from ..service import get_lang
-from .render import cards_line, send_cards_photo
+from .render import answer_long, cards_line, send_cards_photo
 
 router = Router()
 
@@ -42,9 +42,9 @@ async def _replay(message: Message, db: Database, lang: str, row) -> None:
     if row["kind"] == "context" and (row["situation"] or "").strip():
         await message.answer(t(lang, "hist_situation", situation=row["situation"].strip()))
     if row["interpretation"]:
-        await message.answer(row["interpretation"])
+        await answer_long(message, row["interpretation"])
     if row["future_text"]:
-        await message.answer(f"{t(lang, 'future_header')}\n\n{row['future_text']}")
+        await answer_long(message, row["future_text"], header=t(lang, "future_header"))
     for extra in await asyncio.to_thread(db.extras_for_spread, row["id"]):
         ec = split_cards(extra["card_ids"])
         cap = (
@@ -53,7 +53,7 @@ async def _replay(message: Message, db: Database, lang: str, row) -> None:
         )
         await send_cards_photo(message, ec, cap)
         if extra["interpretation"]:
-            await message.answer(extra["interpretation"])
+            await answer_long(message, extra["interpretation"])
 
 
 @router.message(Command("history"))

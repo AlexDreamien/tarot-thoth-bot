@@ -38,7 +38,7 @@ from ..service import (
     ensure_spread_expanded,
     get_lang,
 )
-from .render import cards_line, deliver_spread, send_cards_photo, send_offers
+from .render import answer_long, cards_line, deliver_spread, send_cards_photo, send_offers
 from .spread import deliver_daily
 
 router = Router()
@@ -64,7 +64,7 @@ class ContextFlow(StatesGroup):
 
 async def _deliver_future(message, db, interp, cfg, lang, spread_id):
     text = await ensure_future(db, interp, spread_id=spread_id, lang=lang)
-    await message.answer(f"{t(lang, 'future_header')}\n\n{text}")
+    await answer_long(message, text, header=t(lang, "future_header"))
     await send_offers(
         message,
         lang=lang,
@@ -84,7 +84,7 @@ async def _deliver_extra(message, db, interp, cfg, lang, spread_id, count):
         f"{t(lang, 'cards_line', cards=cards_line(lang, extra_cards))}"
     )
     await send_cards_photo(message, extra_cards, caption)
-    await message.answer(text)
+    await answer_long(message, text)
     await send_offers(
         message,
         lang=lang,
@@ -171,7 +171,7 @@ async def _deliver_expand(message, db, interp, cfg, lang, kind: str, target_id: 
     else:
         text = await ensure_extra_expanded(db, interp, extra_id=target_id, lang=lang)
     if text:
-        await message.answer(f"{t(lang, 'expand_header')}\n\n{text}")
+        await answer_long(message, text, header=t(lang, "expand_header"))
 
 
 @router.callback_query(F.data.startswith("exp:"))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 
 from aiogram.types import BufferedInputFile, Message
 
@@ -11,6 +12,59 @@ from ..card_names import card_name
 from ..deck import get_card
 from ..i18n import t
 from ..keyboards import offers_keyboard
+
+# Telegram rejects messages over 4096 characters ("message is too long"), and
+# expanded readings routinely exceed that — always send generated text through
+# answer_long().
+TG_LIMIT = 3900
+
+
+def split_text(text: str, limit: int = TG_LIMIT) -> list[str]:
+    """Split text into Telegram-sized chunks, preferring paragraph, then line,
+    then sentence boundaries; hard-splits only as a last resort."""
+    text = text.strip()
+    if len(text) <= limit:
+        return [text] if text else []
+
+    chunks: list[str] = []
+    for para in text.split("\n\n"):
+        para = para.strip()
+        if not para:
+            continue
+        if chunks and len(chunks[-1]) + 2 + len(para) <= limit:
+            chunks[-1] = f"{chunks[-1]}\n\n{para}"
+        elif len(para) <= limit:
+            chunks.append(para)
+        else:
+            chunks.extend(_split_long(para, limit))
+    return chunks
+
+
+def _split_long(para: str, limit: int) -> list[str]:
+    """A single paragraph that is itself over the limit."""
+    out: list[str] = []
+    rest = para
+    while len(rest) > limit:
+        window = rest[:limit]
+        cut = max(window.rfind("\n"), window.rfind(". "), window.rfind("! "), window.rfind("? "))
+        cut = cut + 1 if cut > limit // 2 else limit  # keep the delimiter
+        out.append(rest[:cut].strip())
+        rest = rest[cut:].strip()
+    if rest:
+        out.append(rest)
+    return out
+
+
+async def answer_long(message: Message, text: str, header: str | None = None) -> None:
+    """Send model-generated text safely: HTML-escaped (the bot's parse_mode is
+    HTML, and a stray '<' or '&' in a reading would be rejected), prefixed with
+    an optional already-formatted ``header``, and split across messages if it
+    exceeds Telegram's length limit."""
+    body = html.escape(text, quote=False)
+    if header:
+        body = f"{header}\n\n{body}"
+    for chunk in split_text(body):
+        await message.answer(chunk)
 
 
 def cards_line(lang: str, card_ids: list[str]) -> str:
@@ -56,7 +110,7 @@ async def deliver_spread(
     """Photo (header + card names) → interpretation text → action keyboard."""
     caption = f"{header}\n{t(lang, 'cards_line', cards=cards_line(lang, card_ids))}"
     await send_cards_photo(message, card_ids, caption)
-    await message.answer(interpretation)
+    await answer_long(message, interpretation)
     await send_offers(
         message,
         lang=lang,
