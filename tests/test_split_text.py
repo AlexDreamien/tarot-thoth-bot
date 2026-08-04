@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from bot.handlers.render import TG_LIMIT, answer_long, split_text
 
 
@@ -9,6 +11,53 @@ class _FakeMessage:
 
     async def answer(self, text, **kw):
         self.sent.append(text)
+
+
+def test_thinking_placeholder_is_shown_then_deleted():
+    from bot.handlers.render import thinking
+
+    events: list[str] = []
+
+    class Note:
+        async def delete(self):
+            events.append("deleted")
+
+    class M:
+        async def answer(self, text, **kw):
+            events.append(f"sent:{text}")
+            return Note()
+
+    async def run():
+        async with thinking(M(), "ru"):
+            events.append("generating")
+        events.append("result")
+
+    asyncio.run(run())
+    # placeholder appears first and is gone *before* the reading is sent
+    assert events[0].startswith("sent:")
+    assert events[1:] == ["generating", "deleted", "result"]
+
+
+def test_thinking_removes_placeholder_even_when_generation_fails():
+    from bot.handlers.render import thinking
+
+    deleted = []
+
+    class Note:
+        async def delete(self):
+            deleted.append(True)
+
+    class M:
+        async def answer(self, text, **kw):
+            return Note()
+
+    async def run():
+        async with thinking(M(), "ru"):
+            raise RuntimeError("model error")
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(run())
+    assert deleted == [True]
 
 
 def test_generated_text_is_html_escaped_but_header_is_not():

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from aiogram import Router
-from aiogram.enums import ChatAction
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -14,7 +13,7 @@ from ..db import Database, split_cards
 from ..i18n import t
 from ..interpret import Interpreter
 from ..service import available_for_spread, ensure_daily_spread, get_lang
-from .render import deliver_spread
+from .render import deliver_spread, thinking
 
 router = Router()
 
@@ -29,11 +28,11 @@ async def deliver_daily(
 ) -> None:
     """Draw (or re-send) today's spread and deliver it with the action buttons."""
     day = day_key(cfg.tz)
-    await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
-        row, interpretation = await ensure_daily_spread(
-            db, interp, user_id=user_id, day=day, lang=lang
-        )
+        async with thinking(message, lang):
+            row, interpretation = await ensure_daily_spread(
+                db, interp, user_id=user_id, day=day, lang=lang
+            )
     except Exception:
         await message.answer(t(lang, "error_generic"))
         raise

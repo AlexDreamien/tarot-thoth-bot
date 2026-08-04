@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import html
+from contextlib import asynccontextmanager, suppress
 
 from aiogram.types import BufferedInputFile, Message
 
@@ -65,6 +66,26 @@ async def answer_long(message: Message, text: str, header: str | None = None) ->
         body = f"{header}\n\n{body}"
     for chunk in split_text(body):
         await message.answer(chunk)
+
+
+@asynccontextmanager
+async def thinking(message: Message, lang: str):
+    """Show a "composing your reading…" placeholder while the model works, then
+    delete it just before the result is sent.
+
+    Generation can take a minute or two; a chat action only lasts ~5s, so
+    without this the bot looks silently stuck. Wrap ONLY the generation call —
+    the placeholder is removed on exit, so send the result after the block.
+    """
+    note = None
+    with suppress(Exception):
+        note = await message.answer(t(lang, "generating"))
+    try:
+        yield
+    finally:
+        if note is not None:
+            with suppress(Exception):  # already deleted / too old / no rights
+                await note.delete()
 
 
 def cards_line(lang: str, card_ids: list[str]) -> str:

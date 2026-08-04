@@ -17,7 +17,6 @@ from __future__ import annotations
 import asyncio
 
 from aiogram import F, Router
-from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, LabeledPrice, Message, PreCheckoutQuery
@@ -38,7 +37,14 @@ from ..service import (
     ensure_spread_expanded,
     get_lang,
 )
-from .render import answer_long, cards_line, deliver_spread, send_cards_photo, send_offers
+from .render import (
+    answer_long,
+    cards_line,
+    deliver_spread,
+    send_cards_photo,
+    send_offers,
+    thinking,
+)
 from .spread import deliver_daily
 
 router = Router()
@@ -63,7 +69,8 @@ class ContextFlow(StatesGroup):
 
 
 async def _deliver_future(message, db, interp, cfg, lang, spread_id):
-    text = await ensure_future(db, interp, spread_id=spread_id, lang=lang)
+    async with thinking(message, lang):
+        text = await ensure_future(db, interp, spread_id=spread_id, lang=lang)
     await answer_long(message, text, header=t(lang, "future_header"))
     await send_offers(
         message,
@@ -76,9 +83,10 @@ async def _deliver_future(message, db, interp, cfg, lang, spread_id):
 
 
 async def _deliver_extra(message, db, interp, cfg, lang, spread_id, count):
-    extra_id, extra_cards, text = await ensure_extra(
-        db, interp, spread_id=spread_id, count=count, lang=lang
-    )
+    async with thinking(message, lang):
+        extra_id, extra_cards, text = await ensure_extra(
+            db, interp, spread_id=spread_id, count=count, lang=lang
+        )
     caption = (
         f"{t(lang, 'extra_header', n=count)}\n"
         f"{t(lang, 'cards_line', cards=cards_line(lang, extra_cards))}"
@@ -105,9 +113,10 @@ async def _deliver_addon(message, db, interp, cfg, lang, product, spread_id):
 
 
 async def _deliver_context(message, db, interp, cfg, lang, user_id, situation):
-    row, text = await ensure_context_spread(
-        db, interp, user_id=user_id, day=day_key(cfg.tz), situation=situation, lang=lang
-    )
+    async with thinking(message, lang):
+        row, text = await ensure_context_spread(
+            db, interp, user_id=user_id, day=day_key(cfg.tz), situation=situation, lang=lang
+        )
     await deliver_spread(
         message,
         lang=lang,
@@ -154,7 +163,6 @@ async def cb_buy(callback: CallbackQuery, db: Database, cfg: Config, interp: Int
     if cfg.payments_enabled:
         await _send_invoice(callback.message, lang, product, f"{product}:{spread_id}")
         return
-    await callback.message.bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
     try:
         await _deliver_addon(callback.message, db, interp, cfg, lang, product, int(spread_id))
     except Exception:
@@ -164,12 +172,13 @@ async def cb_buy(callback: CallbackQuery, db: Database, cfg: Config, interp: Int
 
 async def _deliver_expand(message, db, interp, cfg, lang, kind: str, target_id: int) -> None:
     """Send the expanded version of a reading (spread / future / clarifying)."""
-    if kind == "s":
-        text = await ensure_spread_expanded(db, interp, spread_id=target_id, lang=lang)
-    elif kind == "f":
-        text = await ensure_future_expanded(db, interp, spread_id=target_id, lang=lang)
-    else:
-        text = await ensure_extra_expanded(db, interp, extra_id=target_id, lang=lang)
+    async with thinking(message, lang):
+        if kind == "s":
+            text = await ensure_spread_expanded(db, interp, spread_id=target_id, lang=lang)
+        elif kind == "f":
+            text = await ensure_future_expanded(db, interp, spread_id=target_id, lang=lang)
+        else:
+            text = await ensure_extra_expanded(db, interp, extra_id=target_id, lang=lang)
     if text:
         await answer_long(message, text, header=t(lang, "expand_header"))
 
@@ -192,7 +201,6 @@ async def cb_expand(
             callback.message, lang, pricing.EXPAND, f"{pricing.EXPAND}:{kind}:{target}"
         )
         return
-    await callback.message.bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
     try:
         await _deliver_expand(callback.message, db, interp, cfg, lang, kind, int(target))
     except Exception:
@@ -250,7 +258,6 @@ async def on_situation(
         )
         return
     await state.clear()
-    await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
         await _deliver_context(message, db, interp, cfg, lang, message.from_user.id, situation)
     except Exception:
@@ -282,7 +289,6 @@ async def on_paid(
         stars=sp.total_amount,
         charge_id=sp.telegram_payment_charge_id,
     )
-    await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
     try:
         if product == pricing.CONTEXT_READING:
             situation = (await state.get_data()).get("situation") or ""
