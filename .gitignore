@@ -12,9 +12,11 @@ env/
 # Env / secrets
 .env
 
-# Database
+# Database (incl. the WAL sidecars SQLite creates next to it)
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite3
 
 # Exported reading histories (personal data — never commit these)

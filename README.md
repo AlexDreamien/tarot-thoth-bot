@@ -66,6 +66,20 @@ different look (e.g. painterly art from an image model), drop 78 PNGs into
 `assets/cards/` under the same filenames — nothing else changes. If an asset is
 missing at runtime, the card is drawn on the fly by the same renderer.
 
+## Exporting a user's readings
+
+```bash
+python tools/export_readings.py --list                 # who's in the database
+python tools/export_readings.py 123456789              # full history
+python tools/export_readings.py 123456789 --from 2026-08-01 --to 2026-08-31
+```
+
+The script downloads a fresh copy of the production database from the Fly
+volume (`--no-fetch` reuses the last one, `--db` points at another file) and
+writes `tools/readings_<user_id>[_<range>].txt` with each reading's date and
+time, type, situation, cards, interpretation, future and clarifying draws. The
+database copy and the exports are gitignored — they hold personal data.
+
 ## Tests & CI
 
 ```bash
