@@ -17,6 +17,9 @@ env/
 *.db-journal
 *.sqlite3
 
+# Exported reading histories (personal data — never commit these)
+tools/readings_*.txt
+
 # Tooling
 .ruff_cache/
 .pytest_cache/
