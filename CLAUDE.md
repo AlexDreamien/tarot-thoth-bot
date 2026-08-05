@@ -102,9 +102,13 @@ python tools/generate_cards.py  # regenerate the 78 card images
   five — 2+3 == 5⭐); at five (a +5, or +2 then +3) offer nothing more. The
   state machine is `service.spread_addon_state` (`(future_bought, "none"|"two"|
   "full")`) → `service.available_addons` → the ordered product list rendered by
-  `offers_keyboard(lang, spread_id, available)`. `render.send_offers` re-posts
-  the keyboard after the daily/context spread AND after each paid add-on
-  message. `cb_buy` refuses any product **not** in `available_for_spread` (toast
+  `offers_keyboard(lang, spread_id, available)`. **Every delivery path ends with
+  `render.send_offers`** — daily/context spread, each add-on message, and the
+  expanded reading (`_deliver_expand`, which resolves an `extra_id` back to its
+  parent `spread_id` first and re-offers everything *except* expanding the same
+  reading again). A path that forgets it dead-ends the chat: no add-ons, no
+  new-day, no situation reading, since the keyboard is the only navigation the
+  bot has. `test_expand_delivery.py` guards this. `cb_buy` refuses any product **not** in `available_for_spread` (toast
   `already_bought`) — this blocks both a re-buy and a stale +5 button after a
   +2. `ensure_extra` excludes `db.all_extra_cards` (base + prior clarifying
   cards) so a +3 never repeats the +2 cards. The **`ctx`** button is always

@@ -171,16 +171,34 @@ async def cb_buy(callback: CallbackQuery, db: Database, cfg: Config, interp: Int
 
 
 async def _deliver_expand(message, db, interp, cfg, lang, kind: str, target_id: int) -> None:
-    """Send the expanded version of a reading (spread / future / clarifying)."""
+    """Send the expanded version of a reading (spread / future / clarifying),
+    then re-post the action keyboard for the spread it belongs to.
+
+    Like every other delivery path, this one must end in buttons — otherwise
+    "tell me more" is a dead end in the chat. The expand button itself is not
+    offered again for the reading just expanded: its long text is cached, so
+    tapping it would only repeat what is already on screen.
+    """
+    spread_id = target_id  # for "s" and "f" the target *is* the spread
     async with thinking(message, lang):
         if kind == "s":
             text = await ensure_spread_expanded(db, interp, spread_id=target_id, lang=lang)
         elif kind == "f":
             text = await ensure_future_expanded(db, interp, spread_id=target_id, lang=lang)
         else:
+            extra = await asyncio.to_thread(db.get_extra, target_id)
+            spread_id = extra["spread_id"] if extra else None
             text = await ensure_extra_expanded(db, interp, extra_id=target_id, lang=lang)
     if text:
         await answer_long(message, text, header=t(lang, "expand_header"))
+    if spread_id is not None:
+        await send_offers(
+            message,
+            lang=lang,
+            spread_id=spread_id,
+            available=await available_for_spread(db, spread_id),
+            paid=cfg.payments_enabled,
+        )
 
 
 @router.callback_query(F.data.startswith("exp:"))
