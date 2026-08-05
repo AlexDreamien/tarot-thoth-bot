@@ -13,7 +13,7 @@ import asyncio
 import hashlib
 import sqlite3
 
-from . import deck, pricing
+from . import deck, memory, pricing
 from . import interpret as interpret_mod
 from .db import Database, split_cards
 from .interpret import Interpreter
@@ -104,16 +104,33 @@ async def ensure_context_spread(
     return await _ensure_interpretation(db, interp, row, lang, kind="context")
 
 
+async def memory_block(db: Database, *, row: sqlite3.Row, lang: str) -> str | None:
+    """What the reader remembers about this querent when reading ``row``.
+
+    Only their own past readings (``db.recent_readings`` is user-scoped), and
+    never the spread being read right now — it's already in the table by the
+    time we build its prompt. None when there's no history to speak of.
+    """
+    rows = await asyncio.to_thread(
+        db.recent_readings, row["user_id"], memory.MAX_SCANNED, row["id"]
+    )
+    block = memory.render_block(
+        memory.from_rows(rows), split_cards(row["card_ids"]), lang, today=row["day"]
+    )
+    return block or None
+
+
 async def _ensure_interpretation(
     db: Database, interp: Interpreter, row: sqlite3.Row, lang: str, *, kind: str
 ) -> tuple[sqlite3.Row, str]:
     if row["interpretation"]:
         return row, row["interpretation"]
     cards = split_cards(row["card_ids"])
+    mem = await memory_block(db, row=row, lang=lang)
     if kind == "context":
-        text = await interp.context(cards, row["situation"], lang)
+        text = await interp.context(cards, row["situation"], lang, mem)
     else:
-        text = await interp.daily(cards, lang)
+        text = await interp.daily(cards, lang, mem)
     await asyncio.to_thread(db.set_interpretation, row["id"], text)
     return await asyncio.to_thread(db.get_spread, row["id"]), text
 
@@ -139,11 +156,12 @@ async def ensure_spread_expanded(
     if row["long_text"]:
         return row["long_text"]
     cards = split_cards(row["card_ids"])
+    mem = await memory_block(db, row=row, lang=lang)
     if row["kind"] == "context":
-        context_block = interpret_mod.build_context_user(cards, row["situation"] or "", lang)
+        context_block = interpret_mod.build_context_user(cards, row["situation"] or "", lang, mem)
     else:
-        context_block = interpret_mod.build_daily_user(cards, lang)
-    text = await interp.expand(context_block, row["interpretation"], lang)
+        context_block = interpret_mod.build_daily_user(cards, lang, mem)
+    text = await interp.expand(context_block, row["interpretation"], lang, memory=bool(mem))
     await asyncio.to_thread(db.set_spread_long, spread_id, text)
     return text
 

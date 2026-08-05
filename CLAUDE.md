@@ -25,8 +25,8 @@ python tools/generate_cards.py  # regenerate the 78 card images
 
 - **Core (aiogram/Pillow/network-free, unit-tested):** `bot/deck.py`,
   `bot/card_names.py`, `bot/daily.py` (`day_key`), `bot/db.py`, `bot/i18n.py`,
-  `bot/pricing.py`, `bot/config.py`, and the `build_*` / `*_system_prompt`
-  functions in `bot/interpret.py`. Keep new logic here.
+  `bot/memory.py`, `bot/pricing.py`, `bot/config.py`, and the `build_*` /
+  `*_system_prompt` functions in `bot/interpret.py`. Keep new logic here.
 - **Thin layer (not unit-tested):** `bot/handlers/`, `bot/service.py`,
   `bot/cards_render.py`, `bot/keyboards.py`, `main.py`, and the `Interpreter`
   class (the only thing in `interpret.py` that touches the network).
@@ -135,6 +135,25 @@ python tools/generate_cards.py  # regenerate the 78 card images
   `last_reminder_day` / `last_weekly_day` make it at most once per local day/week,
   and a user who already drew today gets no ping. Never pass `next_run_time=None`
   to `add_job` — that adds the job **paused** and nothing ever fires.
+- **The reading is given the querent's own past readings (`bot/memory.py`).**
+  `db.recent_readings(user_id, MAX_SCANNED, exclude_id)` → `memory.from_rows` →
+  `memory.render_block(...)` → the block rides in `build_daily_user` /
+  `build_context_user`, and `system_prompt(..., memory=True)` appends
+  `_MEMORY_RULE`. Invariants worth keeping: the block is **empty for a
+  first-time querent** (an empty preamble invites the model to gesture at a past
+  that isn't there) and the rule then isn't appended at all, so those prompts stay
+  byte-identical to the pre-memory ones; `render_block` takes **`today` as a
+  day-key, never a clock**, which is what makes it testable; only readings with
+  an `interpretation` count as history and the spread being read right now is
+  excluded by id (it's already in the table by prompt-building time); clarifying
+  cards are folded into the reading they belong to. `MAX_SCANNED` (40) bounds
+  the repeat search, `MAX_RECENT` (6) how many are actually named — ~300 tokens.
+  Memory feeds the two readings that **open** a spread (daily, context) and their
+  expansions; `future`/`extra` inherit it through the base interpretation they're
+  given. Deliberately **cards and questions only, never past interpretation
+  text**. Same privacy rule as `/history`: `recent_readings` is user-scoped in
+  SQL — one querent's history must never reach another's prompt
+  (`test_memory.py` guards this).
 - **`/history` is a per-user archive; every query is user-scoped in SQL.**
   `handlers/history.py` shows a month calendar (`keyboards.calendar_keyboard`,
   callbacks `hist:nav:YYYY-MM` / `hist:day:YYYY-MM-DD` / `hist:show:<id>` /

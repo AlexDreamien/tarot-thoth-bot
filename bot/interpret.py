@@ -48,6 +48,17 @@ _DEEP = (
     "not simply repeat the short reading — build on it with detail it omitted."
 )
 
+# Added only when the querent actually has a history (see bot/memory.py). The
+# leash is deliberate: an invented "last week the Tower came up" would be worse
+# than no memory at all, and a history recap would eat the whole brief reading.
+_MEMORY_RULE = (
+    " The querent's own earlier readings are listed for you. Use them ONLY where they bear on "
+    "today's cards: if a card returns or a question continues, note it in ONE short clause "
+    "saying when it last came up, then read today's spread. Never mention a reading, card or "
+    "date that is not in that list, never guess at what an earlier reading said, and do not "
+    "recap the history for its own sake."
+)
+
 _FUTURE_BASE = (
     "You are an experienced reader of the Thoth Tarot (Crowley–Harris deck). "
     "This is the one reading where the querent has explicitly asked you to look "
@@ -73,15 +84,16 @@ def _cards_block(card_ids: list[str], lang: str) -> str:
     return "\n".join(_card_brief(get_card(cid), lang) for cid in card_ids)
 
 
-def system_prompt(lang: str, deep: bool = False) -> str:
-    """Reader persona. Brief by default; ``deep`` is the expanded reading."""
+def system_prompt(lang: str, deep: bool = False, memory: bool = False) -> str:
+    """Reader persona. Brief by default; ``deep`` is the expanded reading.
+    ``memory`` adds the rules for using the querent's past readings."""
     base = _BASE.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
-    return base + (_DEEP if deep else _BRIEF)
+    return base + (_DEEP if deep else _BRIEF) + (_MEMORY_RULE if memory else "")
 
 
-def future_system_prompt(lang: str, deep: bool = False) -> str:
+def future_system_prompt(lang: str, deep: bool = False, memory: bool = False) -> str:
     base = _FUTURE_BASE.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
-    return base + (_DEEP if deep else _BRIEF)
+    return base + (_DEEP if deep else _BRIEF) + (_MEMORY_RULE if memory else "")
 
 
 def build_expand_user(context_block: str, short_text: str) -> str:
@@ -94,22 +106,35 @@ def build_expand_user(context_block: str, short_text: str) -> str:
     )
 
 
-def build_daily_user(card_ids: list[str], lang: str) -> str:
+def _with_memory(body: str, memory: str | None) -> str:
+    """Slot the memory block (``bot.memory.render_block``) in front of the
+    closing instruction, or leave the prompt exactly as it was without one."""
+    return f"{memory.strip()}\n\n{body}" if memory and memory.strip() else body
+
+
+def build_daily_user(card_ids: list[str], lang: str, memory: str | None = None) -> str:
     return (
         "Three cards were drawn for the querent's disposition today:\n"
         f"{_cards_block(card_ids, lang)}\n\n"
-        "Interpret this three-card spread as the querent's current disposition."
+        + _with_memory(
+            "Interpret this three-card spread as the querent's current disposition.", memory
+        )
     )
 
 
-def build_context_user(card_ids: list[str], situation: str, lang: str) -> str:
+def build_context_user(
+    card_ids: list[str], situation: str, lang: str, memory: str | None = None
+) -> str:
     return (
         "The querent describes this situation:\n"
         f"«{situation.strip()}»\n\n"
         "Three cards were drawn to read that situation:\n"
         f"{_cards_block(card_ids, lang)}\n\n"
-        "Interpret this three-card spread as the current disposition of the "
-        "described situation specifically."
+        + _with_memory(
+            "Interpret this three-card spread as the current disposition of the "
+            "described situation specifically.",
+            memory,
+        )
     )
 
 
@@ -164,21 +189,36 @@ class Interpreter:
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
     async def expand(
-        self, context_block: str, short_text: str, lang: str, *, future: bool = False
+        self,
+        context_block: str,
+        short_text: str,
+        lang: str,
+        *,
+        future: bool = False,
+        memory: bool = False,
     ) -> str:
         """The expanded reading of cards already read briefly. ``context_block``
-        is the original user prompt (from one of the ``build_*_user`` helpers)."""
-        system = future_system_prompt(lang, deep=True) if future else system_prompt(lang, deep=True)
+        is the original user prompt (from one of the ``build_*_user`` helpers);
+        ``memory`` says whether that block already carries a memory section."""
+        maker = future_system_prompt if future else system_prompt
         return await self._complete(
-            system, build_expand_user(context_block, short_text), max_tokens=2500
+            maker(lang, deep=True, memory=memory),
+            build_expand_user(context_block, short_text),
+            max_tokens=2500,
         )
 
-    async def daily(self, card_ids: list[str], lang: str) -> str:
-        return await self._complete(system_prompt(lang), build_daily_user(card_ids, lang))
-
-    async def context(self, card_ids: list[str], situation: str, lang: str) -> str:
+    async def daily(self, card_ids: list[str], lang: str, memory: str | None = None) -> str:
         return await self._complete(
-            system_prompt(lang), build_context_user(card_ids, situation, lang)
+            system_prompt(lang, memory=bool(memory)),
+            build_daily_user(card_ids, lang, memory),
+        )
+
+    async def context(
+        self, card_ids: list[str], situation: str, lang: str, memory: str | None = None
+    ) -> str:
+        return await self._complete(
+            system_prompt(lang, memory=bool(memory)),
+            build_context_user(card_ids, situation, lang, memory),
         )
 
     async def future(self, card_ids: list[str], base_interpretation: str, lang: str) -> str:

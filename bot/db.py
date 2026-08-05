@@ -331,6 +331,34 @@ class Database:
                 "SELECT * FROM spreads WHERE id=? AND user_id=?", (spread_id, user_id)
             ).fetchone()
 
+    def recent_readings(
+        self, user_id: int, limit: int, exclude_id: int | None = None
+    ) -> list[sqlite3.Row]:
+        """This user's last ``limit`` finished readings, newest first — the raw
+        material for ``memory.render_block``.
+
+        Only readings that actually got an interpretation count as history (a
+        row that was drawn but never read is not something the querent saw), and
+        ``exclude_id`` drops the spread being read right now, which is already
+        in the table by the time we build its prompt. Clarifying cards come
+        along in ``extra_card_ids``: they were on the table too.
+
+        User-scoped in SQL, like every other archive query — one querent's
+        history must never reach another's reading.
+        """
+        sql = """SELECT s.id, s.day, s.kind, s.situation, s.card_ids,
+                        (SELECT group_concat(e.card_ids, ',') FROM extra_draws e
+                          WHERE e.spread_id = s.id) AS extra_card_ids
+                   FROM spreads s
+                  WHERE s.user_id = ? AND s.interpretation IS NOT NULL"""
+        params: list[object] = [user_id]
+        if exclude_id is not None:
+            sql += " AND s.id <> ?"
+            params.append(exclude_id)
+        params.append(limit)
+        with self._lock:
+            return self.conn.execute(sql + " ORDER BY s.id DESC LIMIT ?", params).fetchall()
+
     def extras_for_spread(self, spread_id: int) -> list[sqlite3.Row]:
         with self._lock:
             return self.conn.execute(

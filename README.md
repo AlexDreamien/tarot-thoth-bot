@@ -16,6 +16,10 @@ sober, concrete explanation of the situation as the cards describe it.
   clarifying cards).
 - **Daily reminder** — an offer to draw, at an hour you choose in your own time
   zone (`/settings`). Turn it off and you still get one silent nudge a week.
+- **The reader remembers you.** A reading is given your own recent spreads and
+  questions, so when a card returns it says so — "the Tower again, three weeks
+  after it stood over the same question" — instead of treating every day as the
+  first. Strictly your own history; nothing crosses between querents.
 - **Personal archive** — `/history` shows a calendar of your past readings to revisit.
 - **Add-ons** offered after every spread (see below).
 
@@ -98,8 +102,8 @@ every push and pull request.
 
 - **Core (aiogram/Pillow/network-free, unit-tested):** `bot/deck.py`,
   `bot/card_names.py`, `bot/daily.py`, `bot/db.py`, `bot/i18n.py`,
-  `bot/pricing.py`, `bot/config.py`, and the prompt-building functions in
-  `bot/interpret.py`.
+  `bot/memory.py`, `bot/pricing.py`, `bot/config.py`, and the prompt-building
+  functions in `bot/interpret.py`.
 - **Thin layer (not unit-tested):** `bot/handlers/`, `bot/service.py`,
   `bot/cards_render.py`, `bot/keyboards.py`, `main.py`, and the `Interpreter`
   class (the Claude IO boundary).
@@ -116,6 +120,9 @@ Not "missing features" — intentional limits:
 - **No reversed cards** — a spread reads upright only.
 - **One deck (Thoth).** No deck selection.
 - **No per-user timezone** — "today" is the configured `TZ` for everyone.
+- **Memory carries cards and questions, not past interpretations.** The prompt
+  gets what was on the table and what was asked, never the old readings' text —
+  signal over volume, and it keeps a reading from rewriting yesterday's.
 - **No web dashboard.**
 
 ## License / credits
