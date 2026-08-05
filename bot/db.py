@@ -15,6 +15,8 @@ import sqlite3
 import threading
 from datetime import UTC, datetime
 
+from . import premium
+
 DEFAULT_REMINDER_HOUR = 9  # 09:00 local, unless the user changes it
 
 
@@ -109,6 +111,11 @@ class Database:
         self._add_column("users", "display_name", "TEXT")
         # Optional self-description, given as background to every reading.
         self._add_column("users", "bio", "TEXT")
+        # Premium expiry (a 'YYYY-MM-DD' day-key, inclusive). Adding the column
+        # grandfathers in everyone who was already using the bot — it fires once,
+        # when the column appears, and is a no-op on a fresh database.
+        if self._add_column("users", "premium_until", "TEXT"):
+            self.conn.execute("UPDATE users SET premium_until=?", (premium.GRANDFATHER_UNTIL,))
         # Expanded ("tell me more") interpretations, generated on demand.
         self._add_column("spreads", "long_text", "TEXT")
         self._add_column("spreads", "future_long_text", "TEXT")
@@ -185,6 +192,19 @@ class Database:
         with self._lock:
             self.conn.execute("UPDATE users SET bio=? WHERE user_id=?", (bio, user_id))
             self.conn.commit()
+
+    def set_premium_until(self, user_id: int, until: str | None) -> None:
+        """Premium expiry as a ``YYYY-MM-DD`` day-key; ``None`` revokes it."""
+        with self._lock:
+            self.conn.execute("UPDATE users SET premium_until=? WHERE user_id=?", (until, user_id))
+            self.conn.commit()
+
+    def get_premium_until(self, user_id: int) -> str | None:
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT premium_until FROM users WHERE user_id=?", (user_id,)
+            ).fetchone()
+        return premium.normalize(row["premium_until"]) if row else None
 
     # --- reminder settings / scheduling ----------------------------------
 

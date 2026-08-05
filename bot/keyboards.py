@@ -6,7 +6,7 @@ import calendar as _calmod
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from . import pricing
+from . import premium, pricing
 from . import style as style_mod
 from .i18n import LANGS, _cal_labels, t
 
@@ -165,11 +165,20 @@ def onboarding_keyboard(lang: str) -> InlineKeyboardMarkup:
     )
 
 
+def premium_state(lang: str, premium_until: str | None, today: str) -> str:
+    """The short form shown on the /settings button."""
+    if premium.is_active(premium_until, today):
+        return t(lang, "premium_on", date=premium.normalize(premium_until))
+    return t(lang, "premium_off")
+
+
 def settings_keyboard(
     lang: str,
     hour: int | None,
     offset_min: int,
     persona: style_mod.Persona | None = None,
+    premium_until: str | None = None,
+    today: str = "",
 ) -> InlineKeyboardMarkup:
     who = persona or style_mod.Persona()
     rows = [
@@ -202,6 +211,12 @@ def settings_keyboard(
             InlineKeyboardButton(
                 text=t(lang, "btn_set_lang", name=t(lang, "lang_name")),
                 callback_data="set:lang",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t(lang, "btn_premium", state=premium_state(lang, premium_until, today)),
+                callback_data="premium",
             )
         ],
     ]

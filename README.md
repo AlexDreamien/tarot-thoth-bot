@@ -111,8 +111,8 @@ every push and pull request.
 
 - **Core (aiogram/Pillow/network-free, unit-tested):** `bot/deck.py`,
   `bot/card_names.py`, `bot/daily.py`, `bot/db.py`, `bot/i18n.py`,
-  `bot/memory.py`, `bot/pricing.py`, `bot/style.py`, `bot/config.py`, and the
-  prompt-building functions in `bot/interpret.py`.
+  `bot/memory.py`, `bot/premium.py`, `bot/pricing.py`, `bot/style.py`,
+  `bot/config.py`, and the prompt-building functions in `bot/interpret.py`.
 - **Thin layer (not unit-tested):** `bot/handlers/`, `bot/service.py`,
   `bot/cards_render.py`, `bot/keyboards.py`, `main.py`, and the `Interpreter`
   class (the Claude IO boundary).

@@ -179,6 +179,16 @@ python tools/generate_cards.py  # regenerate the 78 card images
     force a connection where there isn't one". An over-long bio is **refused,
     not truncated** (`on_bio`) — silent truncation would leave the querent
     thinking the bot knows more than it kept.
+- **Premium is recorded but gates nothing yet** (`bot/premium.py` →
+  `users.premium_until`, a `YYYY-MM-DD` day-key, **inclusive** of the expiry
+  day). `is_active(until, today)` takes today as a day-key rather than reading a
+  clock, like `memory` — keep it that way. It **fails closed**: NULL or an
+  unparseable date is *not* premium, so a bad value can never read as "valid
+  forever". `/settings` shows the state; the paid packages come later. The
+  column's `_add_column` returning True triggers a **one-time grandfathering**
+  of everyone already in `users` — it fires only when the column appears, so
+  revoking someone's premium afterwards sticks (`test_premium.py` reopens the DB
+  to prove the backfill doesn't re-run), and it's a no-op on a fresh database.
 - **The first-run nudge fires once, and only from a genuine first `/start`.**
   `cmd_start` reads `db.get_user` *before* `get_or_create_user`, because after
   that the row always exists and the two cases are indistinguishable. It offers

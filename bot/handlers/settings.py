@@ -16,8 +16,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 
+from .. import premium as premium_mod
 from .. import style as style_mod
 from ..config import Config
+from ..daily import day_key
 from ..db import Database
 from ..i18n import t
 from ..keyboards import (
@@ -52,13 +54,25 @@ def _state_text(lang: str, hour: int | None, offset_min: int) -> str:
 
 
 async def _show(
-    message: Message, db: Database, lang: str, user_id: int, edit: bool = False
+    message: Message,
+    db: Database,
+    lang: str,
+    user_id: int,
+    edit: bool = False,
+    tz: str = "UTC",
 ) -> None:
     user = await asyncio.to_thread(db.get_user, user_id)
     hour = user["reminder_hour"] if user else None
     offset = (user["tz_offset_min"] if user else None) or 0
     text = t(lang, "settings_title", state=_state_text(lang, hour, offset))
-    kb = settings_keyboard(lang, hour, offset, style_mod.Persona.from_row(user))
+    kb = settings_keyboard(
+        lang,
+        hour,
+        offset,
+        style_mod.Persona.from_row(user),
+        premium_until=user["premium_until"] if user else None,
+        today=day_key(tz),
+    )
     if edit:
         await message.edit_text(text, reply_markup=kb)
     else:
@@ -70,7 +84,7 @@ async def cmd_settings(message: Message, db: Database, cfg: Config) -> None:
     if message.from_user is None:
         return
     lang = await get_lang(db, message.from_user.id, cfg.default_lang)
-    await _show(message, db, lang, message.from_user.id)
+    await _show(message, db, lang, message.from_user.id, tz=cfg.tz)
 
 
 @router.callback_query(F.data == "set:hour")
@@ -227,6 +241,21 @@ async def on_bio(message: Message, db: Database, cfg: Config, state: FSMContext)
     await message.answer(t(lang, "bio_saved" if bio else "bio_cleared"))
 
 
+@router.callback_query(F.data == "premium")
+async def cb_premium(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    """Informational for now — the paid packages come later."""
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    until = await asyncio.to_thread(db.get_premium_until, callback.from_user.id)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        if premium_mod.is_active(until, day_key(cfg.tz)):
+            await callback.message.answer(t(lang, "premium_title_on", date=until))
+        else:
+            await callback.message.answer(t(lang, "premium_title_off"))
+
+
 @router.callback_query(F.data == "settings:open")
 async def cb_open_settings(callback: CallbackQuery, db: Database, cfg: Config) -> None:
     """The button on the first-run welcome message."""
@@ -235,7 +264,7 @@ async def cb_open_settings(callback: CallbackQuery, db: Database, cfg: Config) -
     lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
     await callback.answer()
     if isinstance(callback.message, Message):
-        await _show(callback.message, db, lang, callback.from_user.id)
+        await _show(callback.message, db, lang, callback.from_user.id, tz=cfg.tz)
 
 
 @router.callback_query(F.data == "set:lang")

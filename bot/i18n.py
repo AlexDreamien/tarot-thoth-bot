@@ -64,6 +64,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_lang": "🌐 Language: {name}",
         "btn_set_address": "🙋 How to address you: {summary}",
         "btn_set_bio": "📝 About you: {summary}",
+        "btn_premium": "💎 Premium: {state}",
+        "premium_on": "until {date}",
+        "premium_off": "not active",
+        "premium_title_on": (
+            "💎 <b>Premium</b>\n\nActive until <b>{date}</b>.\n\n"
+            "Paid packages with extra features are on the way."
+        ),
+        "premium_title_off": (
+            "💎 <b>Premium</b>\n\nNot active right now.\n\n"
+            "Paid packages with extra features are on the way."
+        ),
         "bio_set": "filled in",
         "bio_unset": "empty",
         "bio_title": (
@@ -195,6 +206,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_lang": "🌐 Язык: {name}",
         "btn_set_address": "🙋 Обращение: {summary}",
         "btn_set_bio": "📝 О себе: {summary}",
+        "btn_premium": "💎 Premium: {state}",
+        "premium_on": "до {date}",
+        "premium_off": "не активен",
+        "premium_title_on": (
+            "💎 <b>Premium</b>\n\nАктивен до <b>{date}</b>.\n\n"
+            "Платные пакеты с дополнительными возможностями появятся позже."
+        ),
+        "premium_title_off": (
+            "💎 <b>Premium</b>\n\nСейчас не активен.\n\n"
+            "Платные пакеты с дополнительными возможностями появятся позже."
+        ),
         "bio_set": "заполнено",
         "bio_unset": "пусто",
         "bio_title": (
@@ -326,6 +348,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_lang": "🌐 Мова: {name}",
         "btn_set_address": "🙋 Звертання: {summary}",
         "btn_set_bio": "📝 Про себе: {summary}",
+        "btn_premium": "💎 Premium: {state}",
+        "premium_on": "до {date}",
+        "premium_off": "не активний",
+        "premium_title_on": (
+            "💎 <b>Premium</b>\n\nАктивний до <b>{date}</b>.\n\n"
+            "Платні пакети з додатковими можливостями з'являться пізніше."
+        ),
+        "premium_title_off": (
+            "💎 <b>Premium</b>\n\nЗараз не активний.\n\n"
+            "Платні пакети з додатковими можливостями з'являться пізніше."
+        ),
         "bio_set": "заповнено",
         "bio_unset": "порожньо",
         "bio_title": (
