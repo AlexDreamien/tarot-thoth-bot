@@ -8,6 +8,8 @@ a missing string never crashes a handler.
 
 from __future__ import annotations
 
+import random
+
 LANGS = ("ru", "uk", "en")
 DEFAULT_LANG = "ru"
 
@@ -38,7 +40,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cards_line": "Cards: {cards}",
         "generating": "🔮 Composing your reading…",
         "error_generic": "Something went wrong reading the cards. Try again in a moment.",
-        "offers_title": "Want to go deeper?",
         "btn_future": "🔭 A look at the future",
         "btn_extra2": "🃏 Two clarifying cards",
         "btn_extra5": "🃏 Five clarifying cards",
@@ -125,7 +126,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cards_line": "Карты: {cards}",
         "generating": "🔮 Составляю предсказание…",
         "error_generic": "Не удалось прочитать карты. Попробуй ещё раз через минуту.",
-        "offers_title": "Хочешь копнуть глубже?",
         "btn_future": "🔭 Взгляд в будущее",
         "btn_extra2": "🃏 Две уточняющие карты",
         "btn_extra5": "🃏 Пять уточняющих карт",
@@ -212,7 +212,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cards_line": "Карти: {cards}",
         "generating": "🔮 Складаю передбачення…",
         "error_generic": "Не вдалося прочитати карти. Спробуй ще раз за хвилину.",
-        "offers_title": "Хочеш копнути глибше?",
         "btn_future": "🔭 Погляд у майбутнє",
         "btn_extra2": "🃏 Дві уточнювальні карти",
         "btn_extra5": "🃏 П'ять уточнювальних карт",
@@ -329,6 +328,57 @@ WEEKDAYS = {
     "ru": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
     "uk": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
 }
+
+
+# The line above the action buttons. A tuple per language rather than a
+# _STRINGS entry (like MONTHS/WEEKDAYS), because one is picked at random: these
+# buttons follow *every* reading, and hearing the same sentence a dozen times a
+# week makes the reader sound like a vending machine. Keep them generic — the
+# same line has to sit under a daily spread, a look at the future, clarifying
+# cards and an expanded reading alike.
+OFFERS_TITLES: dict[str, tuple[str, ...]] = {
+    "en": (
+        "Want to go deeper?",
+        "Shall we go on?",
+        "What next?",
+        "The cards have more to say.",
+        "Worth a closer look.",
+        "If you have a question, now's the time.",
+        "The table isn't cleared yet.",
+        "Where shall we look next?",
+    ),
+    "ru": (
+        "Хочешь копнуть глубже?",
+        "Продолжим?",
+        "Что дальше?",
+        "Карты готовы сказать больше.",
+        "Можно посмотреть внимательнее.",
+        "Если есть вопрос — самое время.",
+        "Стол ещё не убран.",
+        "Куда посмотрим дальше?",
+    ),
+    "uk": (
+        "Хочеш копнути глибше?",
+        "Продовжимо?",
+        "Що далі?",
+        "Карти готові сказати більше.",
+        "Можна подивитися уважніше.",
+        "Якщо є питання — саме час.",
+        "Стіл ще не прибрано.",
+        "Куди подивимось далі?",
+    ),
+}
+
+
+def offers_title(lang: str, n: int | None = None) -> str:
+    """One invitation to the action buttons, varied between readings.
+
+    Random by default; pass ``n`` to choose deterministically (it wraps, so any
+    integer is valid) — that is what the tests use.
+    """
+    variants = OFFERS_TITLES.get(lang) or OFFERS_TITLES[DEFAULT_LANG]
+    n = random.randrange(len(variants)) if n is None else n
+    return variants[n % len(variants)]
 
 
 def _cal_labels(lang: str):

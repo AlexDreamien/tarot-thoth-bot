@@ -11,7 +11,7 @@ from aiogram.types import BufferedInputFile, Message
 from .. import cards_render
 from ..card_names import card_name
 from ..deck import get_card
-from ..i18n import t
+from ..i18n import offers_title, t
 from ..keyboards import offers_keyboard
 
 # Telegram rejects messages over 4096 characters ("message is too long"), and
@@ -143,7 +143,7 @@ async def send_offers(
     ``expand_cb`` offers expanding the reading just sent. Called after the daily
     spread and after every add-on message."""
     await message.answer(
-        t(lang, "offers_title"),
+        offers_title(lang),
         reply_markup=offers_keyboard(lang, spread_id, available, paid, expand_cb),
     )
 

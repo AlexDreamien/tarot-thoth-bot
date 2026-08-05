@@ -182,8 +182,14 @@ python tools/generate_cards.py  # regenerate the 78 card images
   calls `_add_column("users", "name", "TEXT")` which `ALTER TABLE ADD COLUMN`s
   only if `PRAGMA table_info` shows it missing. Use this for any new column on
   an existing table — never assume a fresh DB.
-- **Calendar month/weekday labels are `i18n.MONTHS`/`WEEKDAYS`, not `_STRINGS`**
-  (they're lists, and the `test_i18n` key-matching test only covers `_STRINGS`).
+- **Calendar month/weekday labels are `i18n.MONTHS`/`WEEKDAYS`, and the line
+  above the action buttons is `i18n.OFFERS_TITLES` — none of them live in
+  `_STRINGS`** (they're sequences, and the `test_i18n` key-matching test only
+  covers `_STRINGS`). `offers_title(lang)` picks one of eight at random because
+  the buttons follow *every* reading; pass an index to make it deterministic.
+  Keep the variants generic — the same line sits under a daily spread, a future
+  reading, clarifying cards and an expansion. `test_i18n.py` checks the three
+  languages keep equal, distinct, non-empty variant sets.
 - **`i18n` requires matching key sets across ru/uk/en** (`test_i18n.py`), with
   lookup falling back ru→en→raw-key. Add a key to all three languages.
 - **Callback/message handlers guard `from_user is None`** before using `.id`.
