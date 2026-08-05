@@ -49,36 +49,84 @@ RULE = "=" * 72
 DEFAULT_APP = "tarot-thoth-bot"
 REMOTE_DB = "/data/tarot.db"
 LOCAL_DB = HERE / "tarot.db"  # gitignored (*.db)
+SIDECARS = ("-wal", "-shm")  # SQLite's WAL companions, named "<db>-wal"
+
+
+def _rm(path: Path) -> None:
+    if path.exists():
+        path.unlink()
+
+
+def _sftp_get(flyctl: str, app: str, remote: str, dest: Path) -> tuple[bool, str]:
+    """Download one file. ``fly ssh sftp get`` writes relative to the working
+    directory, so we run it in the destination folder."""
+    res = subprocess.run(
+        [flyctl, "ssh", "sftp", "get", remote, dest.name, "--app", app],
+        cwd=dest.parent,
+        capture_output=True,
+        text=True,
+    )
+    ok = res.returncode == 0 and dest.exists() and dest.stat().st_size > 0
+    return ok, (res.stderr or res.stdout or f"exit code {res.returncode}").strip()
+
+
+def _fold_wal(db_path: Path) -> None:
+    """Replay the write-ahead log into the main file so the copy stands alone.
+    Switching the journal mode checkpoints the WAL and removes the sidecars."""
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute("PRAGMA journal_mode=DELETE")
+    finally:
+        conn.close()
+
+
+def _freshness(db_path: Path) -> str:
+    with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
+        n, newest = conn.execute("SELECT COUNT(*), MAX(day) FROM spreads").fetchone()
+    return f"{n} readings, newest {newest or 'none'}"
 
 
 def fetch_db(app: str, dest: Path) -> None:
     """Download the live database from the Fly volume next to this script.
 
-    Uses `flyctl ssh sftp get`, which writes relative to the working directory,
-    so we run it in the destination folder.
+    Two traps here, both hit in production:
+
+    * ``fly ssh sftp get`` **refuses to overwrite** an existing file ("doesn't
+      override existing files for safety"). Downloading straight onto the
+      previous copy therefore fails every run after the first — and an earlier
+      version of this function treated "the file is there and non-empty" as
+      success, so it silently exported a stale snapshot while printing "Saved".
+      Hence: fresh temp name, check the exit code, replace only on success.
+    * The bot runs SQLite in **WAL mode**, so readings committed since the last
+      checkpoint live in ``tarot.db-wal``, not in ``tarot.db``. The sidecars
+      come along and are folded in locally; without that, today's readings can
+      be missing from an otherwise perfectly fresh download.
+
+    The previous copy is left untouched unless the new one arrives intact.
     """
     flyctl = shutil.which("flyctl") or shutil.which("fly")
     if not flyctl:
         sys.exit("flyctl not found — install it, or pass --no-fetch/--db to use a local copy")
-    print(f"Downloading {REMOTE_DB} from {app}…")
-    res = subprocess.run(
-        [flyctl, "ssh", "sftp", "get", REMOTE_DB, dest.name, "--app", app],
-        cwd=dest.parent,
-        capture_output=True,
-        text=True,
-    )
-    # sftp get can report success on stderr; trust the file, not the exit code
-    if not dest.exists() or dest.stat().st_size == 0:
-        sys.exit(
-            "download failed:\n"
-            + (res.stderr or res.stdout or f"exit code {res.returncode}").strip()
-        )
-    # WAL sidecars from a previous copy would shadow fresher rows
-    for suffix in ("-wal", "-shm"):
-        sidecar = dest.with_name(dest.name + suffix)
-        if sidecar.exists():
-            sidecar.unlink()
-    print(f"Saved {dest} ({dest.stat().st_size:,} bytes)")
+    print(f"Downloading {REMOTE_DB} from {app} ...")
+
+    staged = dest.with_name(dest.name + ".download")
+    for suffix in ("", *SIDECARS):
+        _rm(staged.with_name(staged.name + suffix))
+
+    ok, err = _sftp_get(flyctl, app, REMOTE_DB, staged)
+    if not ok:
+        _rm(staged)
+        sys.exit(f"download failed:\n{err}")
+    # Best-effort: the sidecars exist only when the bot hasn't checkpointed yet.
+    for suffix in SIDECARS:
+        _sftp_get(flyctl, app, REMOTE_DB + suffix, staged.with_name(staged.name + suffix))
+
+    _fold_wal(staged)
+    for suffix in SIDECARS:
+        _rm(staged.with_name(staged.name + suffix))
+        _rm(dest.with_name(dest.name + suffix))
+    staged.replace(dest)
+    print(f"Saved {dest} ({dest.stat().st_size:,} bytes) - {_freshness(dest)}")
 
 
 def _connect(path: str) -> sqlite3.Connection:
