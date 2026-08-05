@@ -12,7 +12,7 @@ from aiogram.types import CallbackQuery, Message
 from ..config import Config
 from ..db import Database
 from ..i18n import LANGS, t
-from ..keyboards import lang_keyboard
+from ..keyboards import lang_keyboard, onboarding_keyboard
 from ..service import get_lang
 
 router = Router()
@@ -22,10 +22,15 @@ router = Router()
 async def cmd_start(message: Message, db: Database, cfg: Config) -> None:
     if message.from_user is None:
         return
+    # Look before creating: this is the only chance to tell a first run from a
+    # returning user tapping /start again, and the nudge should fire only once.
+    first_run = await asyncio.to_thread(db.get_user, message.from_user.id) is None
     lang = await get_lang(
         db, message.from_user.id, cfg.default_lang, name=message.from_user.full_name
     )
     await message.answer(t(lang, "start"))
+    if first_run:
+        await message.answer(t(lang, "onboarding"), reply_markup=onboarding_keyboard(lang))
 
 
 @router.message(Command("help"))

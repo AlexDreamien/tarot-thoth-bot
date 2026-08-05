@@ -35,9 +35,10 @@ MALE = "m"
 FEMALE = "f"
 GENDERS = (MALE, FEMALE)
 
-# The name is interpolated into the system prompt, so it is kept short and
-# single-line: a "name" is not a place to smuggle instructions from.
+# Both are interpolated into the system prompt, so both are length-capped and
+# flattened to a single line: neither is a place to smuggle instructions from.
 MAX_NAME = 32
+MAX_BIO = 600  # a solid paragraph — enough context without swamping the reading
 
 
 def normalize_gender(value: str | None) -> str | None:
@@ -46,14 +47,25 @@ def normalize_gender(value: str | None) -> str | None:
     return value if value in GENDERS else None
 
 
-def clean_name(raw: str | None) -> str | None:
-    """Sanitise a self-chosen name for use in a prompt: one line, trimmed,
-    length-capped. None if nothing usable is left."""
+def _flatten(raw: str | None, limit: int) -> str | None:
+    """Sanitise free text for interpolation into a prompt: one line, trimmed,
+    length-capped, no guillemets (they delimit it there). None if nothing
+    usable is left."""
     if not raw:
         return None
     flat = " ".join(raw.split())  # collapses newlines and runs of whitespace
     flat = flat.replace("«", "").replace("»", "").strip()
-    return flat[:MAX_NAME] or None
+    return flat[:limit] or None
+
+
+def clean_name(raw: str | None) -> str | None:
+    """A self-chosen name, fit to put in a prompt."""
+    return _flatten(raw, MAX_NAME)
+
+
+def clean_bio(raw: str | None) -> str | None:
+    """What the querent told the bot about themselves, fit to put in a prompt."""
+    return _flatten(raw, MAX_BIO)
 
 
 @dataclass(frozen=True)
@@ -63,6 +75,7 @@ class Persona:
     style: str = DEFAULT
     gender: str | None = None  # None == unknown, write genderless
     name: str | None = None  # None == no name, address them directly
+    bio: str | None = None  # optional self-description, used as background
 
     @classmethod
     def from_row(cls, row) -> Persona:
@@ -73,6 +86,7 @@ class Persona:
             style=normalize(_cell(row, "style")),
             gender=normalize_gender(_cell(row, "gender")),
             name=clean_name(_cell(row, "display_name")),
+            bio=clean_bio(_cell(row, "bio")),
         )
 
 

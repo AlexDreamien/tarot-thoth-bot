@@ -23,6 +23,7 @@ from ..i18n import t
 from ..keyboards import (
     _fmt_offset,
     address_keyboard,
+    bio_keyboard,
     gender_name,
     hours_keyboard,
     lang_keyboard,
@@ -38,6 +39,10 @@ router = Router()
 
 class NameFlow(StatesGroup):
     waiting_name = State()
+
+
+class BioFlow(StatesGroup):
+    waiting_bio = State()
 
 
 def _state_text(lang: str, hour: int | None, offset_min: int) -> str:
@@ -162,6 +167,75 @@ async def on_name(message: Message, db: Database, cfg: Config, state: FSMContext
     await state.clear()
     await asyncio.to_thread(db.set_display_name, message.from_user.id, name)
     await message.answer(t(lang, "name_saved", name=name))
+
+
+async def _show_bio(message: Message, db: Database, lang: str, user_id: int) -> None:
+    who = await user_persona(db, user_id)
+    await message.answer(
+        t(lang, "bio_title", bio=who.bio or t(lang, "bio_empty")),
+        reply_markup=bio_keyboard(lang, who),
+    )
+
+
+@router.callback_query(F.data == "set:bio:show")
+async def cb_bio(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await _show_bio(callback.message, db, lang, callback.from_user.id)
+
+
+@router.callback_query(F.data == "set:bio:clear")
+async def cb_clear_bio(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await asyncio.to_thread(db.set_bio, callback.from_user.id, None)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.answer(t(lang, "bio_cleared"))
+
+
+@router.callback_query(F.data == "set:bio")
+async def cb_ask_bio(callback: CallbackQuery, db: Database, cfg: Config, state: FSMContext) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    await state.set_state(BioFlow.waiting_bio)
+    if isinstance(callback.message, Message):
+        await callback.message.answer(t(lang, "bio_prompt"))
+
+
+@router.message(BioFlow.waiting_bio, F.text)
+async def on_bio(message: Message, db: Database, cfg: Config, state: FSMContext) -> None:
+    """Too long is refused rather than silently truncated — the querent should
+    know what the bot actually kept."""
+    if message.from_user is None or message.text is None:
+        return
+    lang = await get_lang(db, message.from_user.id, cfg.default_lang)
+    if len(message.text.strip()) > style_mod.MAX_BIO:
+        await message.answer(
+            t(lang, "bio_too_long", limit=style_mod.MAX_BIO, got=len(message.text.strip()))
+        )
+        return
+    bio = style_mod.clean_bio(message.text)
+    await state.clear()
+    await asyncio.to_thread(db.set_bio, message.from_user.id, bio)
+    await message.answer(t(lang, "bio_saved" if bio else "bio_cleared"))
+
+
+@router.callback_query(F.data == "settings:open")
+async def cb_open_settings(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    """The button on the first-run welcome message."""
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await _show(callback.message, db, lang, callback.from_user.id)
 
 
 @router.callback_query(F.data == "set:lang")

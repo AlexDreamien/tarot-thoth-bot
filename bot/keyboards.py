@@ -147,6 +147,24 @@ def style_keyboard(lang: str, current: str) -> InlineKeyboardMarkup:
     )
 
 
+def bio_keyboard(lang: str, persona: style_mod.Persona) -> InlineKeyboardMarkup:
+    rows = [[InlineKeyboardButton(text=t(lang, "btn_edit_bio"), callback_data="set:bio")]]
+    if persona.bio:
+        rows.append(
+            [InlineKeyboardButton(text=t(lang, "btn_clear_bio"), callback_data="set:bio:clear")]
+        )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def onboarding_keyboard(lang: str) -> InlineKeyboardMarkup:
+    """Shown once, after the very first /start."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=t(lang, "btn_open_settings"), callback_data="settings:open")]
+        ]
+    )
+
+
 def settings_keyboard(
     lang: str,
     hour: int | None,
@@ -172,6 +190,12 @@ def settings_keyboard(
             InlineKeyboardButton(
                 text=t(lang, "btn_set_address", summary=address_summary(lang, who)),
                 callback_data="set:address",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t(lang, "btn_set_bio", summary=t(lang, "bio_set" if who.bio else "bio_unset")),
+                callback_data="set:bio:show",
             )
         ],
         [

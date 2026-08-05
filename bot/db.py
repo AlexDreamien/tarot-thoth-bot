@@ -107,6 +107,8 @@ class Database:
         # capture for the admin exports.
         self._add_column("users", "gender", "TEXT")
         self._add_column("users", "display_name", "TEXT")
+        # Optional self-description, given as background to every reading.
+        self._add_column("users", "bio", "TEXT")
         # Expanded ("tell me more") interpretations, generated on demand.
         self._add_column("spreads", "long_text", "TEXT")
         self._add_column("spreads", "future_long_text", "TEXT")
@@ -176,6 +178,12 @@ class Database:
         """What the querent asked to be called; ``None`` clears it."""
         with self._lock:
             self.conn.execute("UPDATE users SET display_name=? WHERE user_id=?", (name, user_id))
+            self.conn.commit()
+
+    def set_bio(self, user_id: int, bio: str | None) -> None:
+        """What they told the bot about themselves; ``None`` clears it."""
+        with self._lock:
+            self.conn.execute("UPDATE users SET bio=? WHERE user_id=?", (bio, user_id))
             self.conn.commit()
 
     # --- reminder settings / scheduling ----------------------------------

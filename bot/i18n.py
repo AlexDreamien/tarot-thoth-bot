@@ -63,6 +63,28 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_tz": "🌍 Time zone (now UTC{offset})",
         "btn_set_lang": "🌐 Language: {name}",
         "btn_set_address": "🙋 How to address you: {summary}",
+        "btn_set_bio": "📝 About you: {summary}",
+        "bio_set": "filled in",
+        "bio_unset": "empty",
+        "bio_title": (
+            "📝 <b>About you</b>\n\n{bio}\n\n"
+            "A few lines about yourself — what you do, what you're going through, "
+            "what matters right now. I'll keep it in mind in every reading. Optional."
+        ),
+        "bio_empty": "<i>Nothing yet.</i>",
+        "btn_edit_bio": "✏️ Write about yourself",
+        "btn_clear_bio": "🧹 Clear",
+        "bio_prompt": "Send a few lines about yourself. /cancel to abort.",
+        "bio_saved": "✅ Noted. I'll keep it in mind.",
+        "bio_cleared": "✅ Cleared.",
+        "bio_too_long": "A bit long — please keep it under {limit} characters (yours is {got}).",
+        "onboarding": (
+            "👋 Before your first spread — set me up a little.\n\n"
+            "Tell me <b>about yourself</b> and I'll read with that in mind; pick the "
+            "<b>voice</b> you want the readings in, and your <b>language</b>.\n\n"
+            "All optional — /tarot works right now either way."
+        ),
+        "btn_open_settings": "⚙️ Open settings",
         "address_title": (
             "🙋 <b>How should I address you?</b>\n\n"
             "Gender: {gender}\nName: {name}\n\n"
@@ -172,6 +194,28 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_tz": "🌍 Часовой пояс (сейчас UTC{offset})",
         "btn_set_lang": "🌐 Язык: {name}",
         "btn_set_address": "🙋 Обращение: {summary}",
+        "btn_set_bio": "📝 О себе: {summary}",
+        "bio_set": "заполнено",
+        "bio_unset": "пусто",
+        "bio_title": (
+            "📝 <b>О себе</b>\n\n{bio}\n\n"
+            "Несколько строк о себе — чем занимаешься, что сейчас происходит, "
+            "что для тебя важно. Буду держать это в уме в каждом раскладе. По желанию."
+        ),
+        "bio_empty": "<i>Пока пусто.</i>",
+        "btn_edit_bio": "✏️ Рассказать о себе",
+        "btn_clear_bio": "🧹 Очистить",
+        "bio_prompt": "Пришли несколько строк о себе. /cancel — отмена.",
+        "bio_saved": "✅ Запомнил. Буду учитывать.",
+        "bio_cleared": "✅ Очищено.",
+        "bio_too_long": "Многовато — уложись в {limit} знаков (у тебя {got}).",
+        "onboarding": (
+            "👋 Перед первым раскладом — давай немного настроимся.\n\n"
+            "Расскажи <b>о себе</b>, и я буду это учитывать; выбери <b>стиль</b>, "
+            "в котором хочешь получать толкования, и <b>язык</b>.\n\n"
+            "Всё по желанию — /tarot работает и так, прямо сейчас."
+        ),
+        "btn_open_settings": "⚙️ Открыть настройки",
         "address_title": (
             "🙋 <b>Как к тебе обращаться?</b>\n\n"
             "Пол: {gender}\nИмя: {name}\n\n"
@@ -281,6 +325,28 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_tz": "🌍 Часовий пояс (зараз UTC{offset})",
         "btn_set_lang": "🌐 Мова: {name}",
         "btn_set_address": "🙋 Звертання: {summary}",
+        "btn_set_bio": "📝 Про себе: {summary}",
+        "bio_set": "заповнено",
+        "bio_unset": "порожньо",
+        "bio_title": (
+            "📝 <b>Про себе</b>\n\n{bio}\n\n"
+            "Кілька рядків про себе — чим займаєшся, що зараз відбувається, "
+            "що для тебе важливо. Триматиму це на увазі в кожному розкладі. За бажанням."
+        ),
+        "bio_empty": "<i>Поки порожньо.</i>",
+        "btn_edit_bio": "✏️ Розповісти про себе",
+        "btn_clear_bio": "🧹 Очистити",
+        "bio_prompt": "Надішли кілька рядків про себе. /cancel — скасувати.",
+        "bio_saved": "✅ Запам'ятав. Враховуватиму.",
+        "bio_cleared": "✅ Очищено.",
+        "bio_too_long": "Забагато — вклади в {limit} знаків (у тебе {got}).",
+        "onboarding": (
+            "👋 Перед першим розкладом — трохи налаштуймося.\n\n"
+            "Розкажи <b>про себе</b>, і я це враховуватиму; обери <b>стиль</b>, "
+            "у якому хочеш отримувати тлумачення, і <b>мову</b>.\n\n"
+            "Усе за бажанням — /tarot працює й так, просто зараз."
+        ),
+        "btn_open_settings": "⚙️ Відкрити налаштування",
         "address_title": (
             "🙋 <b>Як до тебе звертатися?</b>\n\n"
             "Стать: {gender}\nІм'я: {name}\n\n"
