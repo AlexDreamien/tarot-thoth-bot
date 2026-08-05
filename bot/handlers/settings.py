@@ -20,6 +20,7 @@ from ..i18n import t
 from ..keyboards import (
     _fmt_offset,
     hours_keyboard,
+    lang_keyboard,
     settings_keyboard,
     style_keyboard,
     style_name,
@@ -76,6 +77,18 @@ async def cb_pick_tz(callback: CallbackQuery, db: Database, cfg: Config) -> None
     await callback.answer()
     if isinstance(callback.message, Message):
         await callback.message.answer(t(lang, "pick_tz"), reply_markup=tz_keyboard())
+
+
+@router.callback_query(F.data == "set:lang")
+async def cb_pick_lang(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    """The language picker now lives in /settings; the `lang:<code>` callbacks
+    it produces are still handled in ``handlers.common``."""
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.answer(t(lang, "lang_prompt"), reply_markup=lang_keyboard())
 
 
 @router.callback_query(F.data == "set:style")

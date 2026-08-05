@@ -140,6 +140,13 @@ python tools/generate_cards.py  # regenerate the 78 card images
   `last_reminder_day` / `last_weekly_day` make it at most once per local day/week,
   and a user who already drew today gets no ping. Never pass `next_run_time=None`
   to `add_job` — that adds the job **paused** and nothing ever fires.
+- **`/settings` is the single preferences panel** — reminder hour, UTC offset,
+  voice and language. It is no longer "reminders": keep `settings_title` generic
+  when adding a preference, and add the button to `keyboards.settings_keyboard`
+  rather than minting a new command. Language moved in here (`set:lang` opens
+  `lang_keyboard`; the resulting `lang:<code>` callbacks are still handled in
+  `handlers.common`), and `/lang` was dropped from `main._COMMANDS` while the
+  command itself still works for muscle memory.
 - **The voice is a per-user setting (`bot/style.py` → `users.style`), and it
   changes ONLY the voice.** Codes (`fortune`/`psy`/`logic`/`buddy`) are
   persisted, so keep them stable like the `pricing` product codes;

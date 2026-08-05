@@ -73,6 +73,22 @@ def test_settings_offers_the_style_button():
     assert t("ru", "style_buddy") in label  # the current voice shows on the button
 
 
+def test_settings_covers_every_preference_including_language():
+    # /settings is the one panel now — language no longer has its own menu slot.
+    kb = settings_keyboard("ru", 9, 180, style.FORTUNE)
+    assert {"set:hour", "set:tz", "set:style", "set:lang"} <= set(_datas(kb))
+    label = [b.text for row in kb.inline_keyboard for b in row if b.callback_data == "set:lang"][0]
+    assert t("ru", "lang_name") in label  # shows the current language
+
+
+def test_the_settings_panel_is_not_titled_after_reminders_alone():
+    for lang in LANGS:
+        title = t(lang, "settings_title", state="…")
+        assert "{state}" not in title
+        for word in ("reminder</b>", "напоминание</b>", "нагадування</b>"):
+            assert word.lower() not in title.lower(), f"{lang} title still names only reminders"
+
+
 def test_the_chosen_voice_survives_a_round_trip(tmp_path):
     db = Database(str(tmp_path / "t.db"))
     try:

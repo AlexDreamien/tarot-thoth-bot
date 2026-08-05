@@ -22,7 +22,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "<b>current disposition</b> — where you stand right now, not what the "
             "future holds.\n\n"
             "Your daily spread is fixed for the day: it won't change until midnight.\n\n"
-            "Send /tarot for today's spread, /lang to switch language, /help for more."
+            "Send /tarot for today's spread, /settings to set it up, /help for more."
         ),
         "help": (
             "🔮 <b>How it works</b>\n\n"
@@ -32,7 +32,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "future, extra clarifying cards, or a reading for a specific "
             "situation you describe.\n\n"
             "/history — browse and revisit your past readings.\n"
-            "/lang — change language."
+            "/settings — reminder, voice of the readings, language."
         ),
         "lang_prompt": "Choose your language:",
         "lang_set": "Language set to <b>English</b>.",
@@ -56,14 +56,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
         "invoice_title_expand": "Expanded reading",
         "invoice_desc_expand": "The full, detailed version of this reading.",
-        "settings_title": (
-            "⚙️ <b>Daily reminder</b>\n\nNow: {state}\n\n"
-            "I'll offer you a reading each day at the chosen hour."
-        ),
+        "settings_title": "⚙️ <b>Settings</b>\n\nDaily reminder: {state}",
         "settings_state_on": "every day at {hour}:00 (UTC{offset})",
         "settings_state_off": "off — I'll nudge you once a week instead",
         "btn_set_time": "🕘 Reminder time",
         "btn_set_tz": "🌍 Time zone (now UTC{offset})",
+        "btn_set_lang": "🌐 Language: {name}",
         "btn_set_style": "🎭 Voice: {style}",
         "pick_style": "Pick the voice of your readings:",
         "style_saved": "✅ Voice: {style}",
@@ -116,7 +114,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "Каждый день я вытягиваю тебе три карты из колоды Тота и объясняю твою "
             "<b>текущую диспозицию</b> — где ты сейчас, а не что будет в будущем.\n\n"
             "Расклад на день фиксирован: он не изменится до полуночи.\n\n"
-            "Отправь /tarot для расклада на сегодня, /lang — сменить язык, /help — подробнее."
+            "Отправь /tarot для расклада на сегодня, /settings — настроить, /help — подробнее."
         ),
         "help": (
             "🔮 <b>Как это работает</b>\n\n"
@@ -125,7 +123,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "После расклада прямо на кнопках можно добавить: взгляд в будущее, "
             "уточняющие карты или расклад под конкретную ситуацию.\n\n"
             "/history — смотреть и повторять свои прошлые расклады.\n"
-            "/lang — сменить язык."
+            "/settings — напоминание, стиль толкований, язык."
         ),
         "lang_prompt": "Выбери язык:",
         "lang_set": "Язык установлен: <b>Русский</b>.",
@@ -149,14 +147,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
         "invoice_title_expand": "Развёрнутое толкование",
         "invoice_desc_expand": "Полная, подробная версия этого толкования.",
-        "settings_title": (
-            "⚙️ <b>Ежедневное напоминание</b>\n\nСейчас: {state}\n\n"
-            "Каждый день в выбранный час буду предлагать тебе расклад."
-        ),
+        "settings_title": "⚙️ <b>Настройки</b>\n\nЕжедневное напоминание: {state}",
         "settings_state_on": "каждый день в {hour}:00 (UTC{offset})",
         "settings_state_off": "выключено — напомню раз в неделю",
         "btn_set_time": "🕘 Время напоминания",
         "btn_set_tz": "🌍 Часовой пояс (сейчас UTC{offset})",
+        "btn_set_lang": "🌐 Язык: {name}",
         "btn_set_style": "🎭 Стиль: {style}",
         "pick_style": "Выбери стиль толкований:",
         "style_saved": "✅ Стиль: {style}",
@@ -209,7 +205,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "Щодня я витягую тобі три карти з колоди Тота й пояснюю твою "
             "<b>поточну диспозицію</b> — де ти зараз, а не що буде в майбутньому.\n\n"
             "Розклад на день зафіксований: він не зміниться до опівночі.\n\n"
-            "Надішли /tarot для розкладу на сьогодні, /lang — змінити мову, /help — докладніше."
+            "Надішли /tarot для розкладу на сьогодні, /settings — налаштувати, /help — докладніше."
         ),
         "help": (
             "🔮 <b>Як це працює</b>\n\n"
@@ -218,7 +214,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "Після розкладу прямо з кнопок можна додати: погляд у майбутнє, "
             "уточнювальні карти або розклад під конкретну ситуацію.\n\n"
             "/history — переглядати й повторювати свої минулі розклади.\n"
-            "/lang — змінити мову."
+            "/settings — нагадування, стиль тлумачень, мова."
         ),
         "lang_prompt": "Обери мову:",
         "lang_set": "Мову встановлено: <b>Українська</b>.",
@@ -242,14 +238,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
         "invoice_title_expand": "Розгорнуте тлумачення",
         "invoice_desc_expand": "Повна, докладна версія цього тлумачення.",
-        "settings_title": (
-            "⚙️ <b>Щоденне нагадування</b>\n\nЗараз: {state}\n\n"
-            "Щодня о вибраній годині пропонуватиму тобі розклад."
-        ),
+        "settings_title": "⚙️ <b>Налаштування</b>\n\nЩоденне нагадування: {state}",
         "settings_state_on": "щодня о {hour}:00 (UTC{offset})",
         "settings_state_off": "вимкнено — нагадаю раз на тиждень",
         "btn_set_time": "🕘 Час нагадування",
         "btn_set_tz": "🌍 Часовий пояс (зараз UTC{offset})",
+        "btn_set_lang": "🌐 Мова: {name}",
         "btn_set_style": "🎭 Стиль: {style}",
         "pick_style": "Обери стиль тлумачень:",
         "style_saved": "✅ Стиль: {style}",

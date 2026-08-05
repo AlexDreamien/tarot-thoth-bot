@@ -133,6 +133,12 @@ def settings_keyboard(
                 callback_data="set:style",
             )
         ],
+        [
+            InlineKeyboardButton(
+                text=t(lang, "btn_set_lang", name=t(lang, "lang_name")),
+                callback_data="set:lang",
+            )
+        ],
     ]
     if hour is None:
         rows.append([InlineKeyboardButton(text=t(lang, "btn_reminder_on"), callback_data="set:on")])

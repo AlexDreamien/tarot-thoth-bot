@@ -18,12 +18,13 @@ from bot.handlers import all_routers
 from bot.interpret import Interpreter
 from bot.scheduler import ReminderScheduler
 
+# /lang still works, but it lives inside /settings now rather than taking its
+# own slot in the menu — the panel covers reminder, voice and language.
 _COMMANDS = [
     BotCommand(command="tarot", description="Расклад на сегодня / Today's spread"),
     BotCommand(command="history", description="Мои расклады / My readings"),
-    BotCommand(command="settings", description="Напоминания / Reminders"),
+    BotCommand(command="settings", description="Настройки / Settings"),
     BotCommand(command="help", description="Как это работает / How it works"),
-    BotCommand(command="lang", description="Язык / Language"),
 ]
 
 

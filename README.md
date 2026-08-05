@@ -8,7 +8,7 @@ sober, concrete explanation of the situation as the cards describe it.
 - **One spread per day, fixed.** The cards and their interpretation are drawn
   and generated once per (user, day) and cached — they don't change until local
   midnight.
-- **Multilingual** — Russian, Ukrainian, English, switchable with `/lang`.
+- **Multilingual** — Russian, Ukrainian, English, switchable in `/settings`.
 - **Readings by Claude** (Opus 4.8) via the Anthropic API.
 - **Card images** composited from bundled per-card art.
 - **Brief by default** — readings are a tight paragraph; an "expand this reading"
