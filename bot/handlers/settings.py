@@ -13,11 +13,19 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
+from .. import style as style_mod
 from ..config import Config
 from ..db import Database
 from ..i18n import t
-from ..keyboards import _fmt_offset, hours_keyboard, settings_keyboard, tz_keyboard
-from ..service import get_lang
+from ..keyboards import (
+    _fmt_offset,
+    hours_keyboard,
+    settings_keyboard,
+    style_keyboard,
+    style_name,
+    tz_keyboard,
+)
+from ..service import get_lang, user_style
 
 router = Router()
 
@@ -35,7 +43,7 @@ async def _show(
     hour = user["reminder_hour"] if user else None
     offset = (user["tz_offset_min"] if user else None) or 0
     text = t(lang, "settings_title", state=_state_text(lang, hour, offset))
-    kb = settings_keyboard(lang, hour, offset)
+    kb = settings_keyboard(lang, hour, offset, await user_style(db, user_id))
     if edit:
         await message.edit_text(text, reply_markup=kb)
     else:
@@ -68,6 +76,33 @@ async def cb_pick_tz(callback: CallbackQuery, db: Database, cfg: Config) -> None
     await callback.answer()
     if isinstance(callback.message, Message):
         await callback.message.answer(t(lang, "pick_tz"), reply_markup=tz_keyboard())
+
+
+@router.callback_query(F.data == "set:style")
+async def cb_pick_style(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    current = await user_style(db, callback.from_user.id)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.answer(
+            t(lang, "pick_style"), reply_markup=style_keyboard(lang, current)
+        )
+
+
+@router.callback_query(F.data.startswith("set:style:"))
+async def cb_set_style(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    """Applies to readings generated from now on; already-cached ones keep the
+    voice they were written in."""
+    if callback.from_user is None or callback.data is None:
+        return
+    chosen = style_mod.normalize(callback.data.split(":")[2])
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await asyncio.to_thread(db.set_style, callback.from_user.id, chosen)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.answer(t(lang, "style_saved", style=style_name(lang, chosen)))
 
 
 @router.callback_query(F.data.startswith("set:hour:"))

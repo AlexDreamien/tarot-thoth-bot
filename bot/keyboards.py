@@ -7,6 +7,7 @@ import calendar as _calmod
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from . import pricing
+from . import style as style_mod
 from .i18n import LANGS, _cal_labels, t
 
 
@@ -95,13 +96,41 @@ def _fmt_offset(minutes: int) -> str:
     return f"{sign}{h}" + (f":{m:02d}" if m else "")
 
 
-def settings_keyboard(lang: str, hour: int | None, offset_min: int) -> InlineKeyboardMarkup:
+def style_name(lang: str, code: str) -> str:
+    return t(lang, f"style_{code}")
+
+
+def style_keyboard(lang: str, current: str) -> InlineKeyboardMarkup:
+    """One button per voice; the active one is ticked. Names only — the styles
+    are meant to be tried, not read about."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=("✅ " if code == current else "") + style_name(lang, code),
+                    callback_data=f"set:style:{code}",
+                )
+            ]
+            for code in style_mod.STYLES
+        ]
+    )
+
+
+def settings_keyboard(
+    lang: str, hour: int | None, offset_min: int, style: str = style_mod.DEFAULT
+) -> InlineKeyboardMarkup:
     rows = [
         [InlineKeyboardButton(text=t(lang, "btn_set_time"), callback_data="set:hour")],
         [
             InlineKeyboardButton(
                 text=t(lang, "btn_set_tz", offset=_fmt_offset(offset_min)),
                 callback_data="set:tz",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t(lang, "btn_set_style", style=style_name(lang, style)),
+                callback_data="set:style",
             )
         ],
     ]

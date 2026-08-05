@@ -25,8 +25,9 @@ python tools/generate_cards.py  # regenerate the 78 card images
 
 - **Core (aiogram/Pillow/network-free, unit-tested):** `bot/deck.py`,
   `bot/card_names.py`, `bot/daily.py` (`day_key`), `bot/db.py`, `bot/i18n.py`,
-  `bot/memory.py`, `bot/pricing.py`, `bot/config.py`, and the `build_*` /
-  `*_system_prompt` functions in `bot/interpret.py`. Keep new logic here.
+  `bot/memory.py`, `bot/pricing.py`, `bot/style.py`, `bot/config.py`, and the
+  `build_*` / `*_system_prompt` functions in `bot/interpret.py`. Keep new logic
+  here.
 - **Thin layer (not unit-tested):** `bot/handlers/`, `bot/service.py`,
   `bot/cards_render.py`, `bot/keyboards.py`, `main.py`, and the `Interpreter`
   class (the only thing in `interpret.py` that touches the network).
@@ -139,6 +140,19 @@ python tools/generate_cards.py  # regenerate the 78 card images
   `last_reminder_day` / `last_weekly_day` make it at most once per local day/week,
   and a user who already drew today gets no ping. Never pass `next_run_time=None`
   to `add_job` — that adds the job **paused** and nothing ever fires.
+- **The voice is a per-user setting (`bot/style.py` → `users.style`), and it
+  changes ONLY the voice.** Codes (`fortune`/`psy`/`logic`/`buddy`) are
+  persisted, so keep them stable like the `pricing` product codes;
+  `style.normalize` maps NULL or an unknown code back to the default, which is
+  what every row predating the column reads as. `interpret._STYLE_VOICES` is
+  appended **last** so the voice governs tone, and `FORTUNE` appends nothing —
+  a user who never opens the setting gets a byte-identical prompt to before the
+  feature. The rules above it (current disposition, no prediction, brevity) hold
+  in **every** style, `buddy` included; `test_style.py` asserts that for all
+  four. `service.user_style` looks the voice up from the spread's `user_id`, the
+  same way `memory_block` does, so handlers don't thread it through. Changing
+  the setting only affects readings generated afterwards — stored text keeps the
+  voice it was written in.
 - **The reading is given the querent's own past readings (`bot/memory.py`).**
   `db.recent_readings(user_id, MAX_SCANNED, exclude_id)` → `memory.from_rows` →
   `memory.render_block(...)` → the block rides in `build_daily_user` /

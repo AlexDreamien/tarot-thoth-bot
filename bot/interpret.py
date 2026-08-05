@@ -11,6 +11,7 @@ except the dedicated "future" reading, which is the one paid exception.
 
 from __future__ import annotations
 
+from . import style as style_mod
 from .card_names import card_name
 from .deck import Card, get_card
 
@@ -59,6 +60,30 @@ _MEMORY_RULE = (
     "recap the history for its own sake."
 )
 
+# The querent's chosen voice (bot/style.py), appended last so it governs the
+# tone. It governs *only* the tone: the rules above it — current disposition,
+# no prediction, brevity — hold in every style. FORTUNE appends nothing, so the
+# default persona's prompt stays exactly what it always was.
+_STYLE_VOICES = {
+    style_mod.PSY: (
+        " VOICE — psychologist: read the spread as projective material. Name the inner "
+        "conflict, the motive, the defence and the need under the situation in plain "
+        "psychological language (ambivalence, avoidance, projection, secondary gain) rather "
+        "than mystical vocabulary. No diagnoses, no therapy clichés."
+    ),
+    style_mod.LOGIC: (
+        " VOICE — analyst: impersonal and unemotional, like a case note. State the "
+        "configuration, what follows from it, and where it contradicts itself. No mystical "
+        "vocabulary, no comfort, no encouragement, no rhetorical questions, no warmth."
+    ),
+    style_mod.BUDDY: (
+        " VOICE — a close friend who doesn't sugar-coat: informal, blunt, profane. Swear "
+        "naturally and freely in the language you are writing in, strong obscenity included. "
+        "Say the uncomfortable part out loud, call things what they are, never soften a "
+        "reading to spare feelings and never apologise for it. No mystical solemnity."
+    ),
+}
+
 _FUTURE_BASE = (
     "You are an experienced reader of the Thoth Tarot (Crowley–Harris deck). "
     "This is the one reading where the querent has explicitly asked you to look "
@@ -84,16 +109,25 @@ def _cards_block(card_ids: list[str], lang: str) -> str:
     return "\n".join(_card_brief(get_card(cid), lang) for cid in card_ids)
 
 
-def system_prompt(lang: str, deep: bool = False, memory: bool = False) -> str:
+def _voice(style: str | None) -> str:
+    return _STYLE_VOICES.get(style_mod.normalize(style), "")
+
+
+def system_prompt(
+    lang: str, deep: bool = False, memory: bool = False, style: str | None = None
+) -> str:
     """Reader persona. Brief by default; ``deep`` is the expanded reading.
-    ``memory`` adds the rules for using the querent's past readings."""
+    ``memory`` adds the rules for using the querent's past readings; ``style``
+    is the querent's chosen voice (``bot/style.py``)."""
     base = _BASE.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
-    return base + (_DEEP if deep else _BRIEF) + (_MEMORY_RULE if memory else "")
+    return base + (_DEEP if deep else _BRIEF) + (_MEMORY_RULE if memory else "") + _voice(style)
 
 
-def future_system_prompt(lang: str, deep: bool = False, memory: bool = False) -> str:
+def future_system_prompt(
+    lang: str, deep: bool = False, memory: bool = False, style: str | None = None
+) -> str:
     base = _FUTURE_BASE.format(lang=_LANG_INSTRUCTION.get(lang, "English"))
-    return base + (_DEEP if deep else _BRIEF) + (_MEMORY_RULE if memory else "")
+    return base + (_DEEP if deep else _BRIEF) + (_MEMORY_RULE if memory else "") + _voice(style)
 
 
 def build_expand_user(context_block: str, short_text: str) -> str:
@@ -196,34 +230,48 @@ class Interpreter:
         *,
         future: bool = False,
         memory: bool = False,
+        style: str | None = None,
     ) -> str:
         """The expanded reading of cards already read briefly. ``context_block``
         is the original user prompt (from one of the ``build_*_user`` helpers);
         ``memory`` says whether that block already carries a memory section."""
         maker = future_system_prompt if future else system_prompt
         return await self._complete(
-            maker(lang, deep=True, memory=memory),
+            maker(lang, deep=True, memory=memory, style=style),
             build_expand_user(context_block, short_text),
             max_tokens=2500,
         )
 
-    async def daily(self, card_ids: list[str], lang: str, memory: str | None = None) -> str:
+    async def daily(
+        self, card_ids: list[str], lang: str, memory: str | None = None, style: str | None = None
+    ) -> str:
         return await self._complete(
-            system_prompt(lang, memory=bool(memory)),
+            system_prompt(lang, memory=bool(memory), style=style),
             build_daily_user(card_ids, lang, memory),
         )
 
     async def context(
-        self, card_ids: list[str], situation: str, lang: str, memory: str | None = None
+        self,
+        card_ids: list[str],
+        situation: str,
+        lang: str,
+        memory: str | None = None,
+        style: str | None = None,
     ) -> str:
         return await self._complete(
-            system_prompt(lang, memory=bool(memory)),
+            system_prompt(lang, memory=bool(memory), style=style),
             build_context_user(card_ids, situation, lang, memory),
         )
 
-    async def future(self, card_ids: list[str], base_interpretation: str, lang: str) -> str:
+    async def future(
+        self,
+        card_ids: list[str],
+        base_interpretation: str,
+        lang: str,
+        style: str | None = None,
+    ) -> str:
         return await self._complete(
-            future_system_prompt(lang),
+            future_system_prompt(lang, style=style),
             build_future_user(card_ids, base_interpretation, lang),
         )
 
@@ -233,8 +281,9 @@ class Interpreter:
         base_interpretation: str,
         extra_card_ids: list[str],
         lang: str,
+        style: str | None = None,
     ) -> str:
         return await self._complete(
-            system_prompt(lang),
+            system_prompt(lang, style=style),
             build_extra_user(base_card_ids, base_interpretation, extra_card_ids, lang),
         )

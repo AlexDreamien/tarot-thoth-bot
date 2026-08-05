@@ -15,6 +15,7 @@ import sqlite3
 
 from . import deck, memory, pricing
 from . import interpret as interpret_mod
+from . import style as style_mod
 from .db import Database, split_cards
 from .interpret import Interpreter
 
@@ -104,6 +105,12 @@ async def ensure_context_spread(
     return await _ensure_interpretation(db, interp, row, lang, kind="context")
 
 
+async def user_style(db: Database, user_id: int) -> str:
+    """The querent's chosen voice (``bot/style.py``), defaulting for NULL or an
+    unknown code — a style dropped from ``STYLES`` must not break old rows."""
+    return style_mod.normalize(await asyncio.to_thread(db.get_style, user_id))
+
+
 async def memory_block(db: Database, *, row: sqlite3.Row, lang: str) -> str | None:
     """What the reader remembers about this querent when reading ``row``.
 
@@ -127,10 +134,11 @@ async def _ensure_interpretation(
         return row, row["interpretation"]
     cards = split_cards(row["card_ids"])
     mem = await memory_block(db, row=row, lang=lang)
+    voice = await user_style(db, row["user_id"])
     if kind == "context":
-        text = await interp.context(cards, row["situation"], lang, mem)
+        text = await interp.context(cards, row["situation"], lang, mem, voice)
     else:
-        text = await interp.daily(cards, lang, mem)
+        text = await interp.daily(cards, lang, mem, voice)
     await asyncio.to_thread(db.set_interpretation, row["id"], text)
     return await asyncio.to_thread(db.get_spread, row["id"]), text
 
@@ -140,7 +148,10 @@ async def ensure_future(db: Database, interp: Interpreter, *, spread_id: int, la
     row = await asyncio.to_thread(db.get_spread, spread_id)
     if row["future_text"]:
         return row["future_text"]
-    text = await interp.future(split_cards(row["card_ids"]), row["interpretation"] or "", lang)
+    voice = await user_style(db, row["user_id"])
+    text = await interp.future(
+        split_cards(row["card_ids"]), row["interpretation"] or "", lang, voice
+    )
     await asyncio.to_thread(db.set_future, spread_id, text)
     return text
 
@@ -161,7 +172,13 @@ async def ensure_spread_expanded(
         context_block = interpret_mod.build_context_user(cards, row["situation"] or "", lang, mem)
     else:
         context_block = interpret_mod.build_daily_user(cards, lang, mem)
-    text = await interp.expand(context_block, row["interpretation"], lang, memory=bool(mem))
+    text = await interp.expand(
+        context_block,
+        row["interpretation"],
+        lang,
+        memory=bool(mem),
+        style=await user_style(db, row["user_id"]),
+    )
     await asyncio.to_thread(db.set_spread_long, spread_id, text)
     return text
 
@@ -179,7 +196,13 @@ async def ensure_future_expanded(
     context_block = interpret_mod.build_future_user(
         split_cards(row["card_ids"]), row["interpretation"] or "", lang
     )
-    text = await interp.expand(context_block, row["future_text"], lang, future=True)
+    text = await interp.expand(
+        context_block,
+        row["future_text"],
+        lang,
+        future=True,
+        style=await user_style(db, row["user_id"]),
+    )
     await asyncio.to_thread(db.set_future_long, spread_id, text)
     return text
 
@@ -201,7 +224,9 @@ async def ensure_extra_expanded(
         split_cards(extra["card_ids"]),
         lang,
     )
-    text = await interp.expand(context_block, extra["interpretation"], lang)
+    text = await interp.expand(
+        context_block, extra["interpretation"], lang, style=await user_style(db, row["user_id"])
+    )
     await asyncio.to_thread(db.set_extra_long, extra_id, text)
     return text
 
@@ -226,6 +251,12 @@ async def ensure_extra(
     )
     if extra["interpretation"]:
         return extra["id"], split_cards(extra["card_ids"]), extra["interpretation"]
-    text = await interp.extra(base_cards, row["interpretation"] or "", extra_cards, lang)
+    text = await interp.extra(
+        base_cards,
+        row["interpretation"] or "",
+        extra_cards,
+        lang,
+        await user_style(db, row["user_id"]),
+    )
     await asyncio.to_thread(db.set_extra_interpretation, extra["id"], text)
     return extra["id"], extra_cards, text

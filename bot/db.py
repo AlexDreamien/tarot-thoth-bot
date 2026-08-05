@@ -98,6 +98,9 @@ class Database:
         self._add_column("users", "tz_offset_min", "INTEGER")
         self._add_column("users", "last_reminder_day", "TEXT")
         self._add_column("users", "last_weekly_day", "TEXT")
+        # Voice of the readings (bot/style.py). NULL == the default persona,
+        # which is what every user predating this column gets.
+        self._add_column("users", "style", "TEXT")
         # Expanded ("tell me more") interpretations, generated on demand.
         self._add_column("spreads", "long_text", "TEXT")
         self._add_column("spreads", "future_long_text", "TEXT")
@@ -142,6 +145,19 @@ class Database:
     def set_lang(self, user_id: int, lang: str) -> None:
         with self._lock:
             self.conn.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))
+            self.conn.commit()
+
+    def get_style(self, user_id: int) -> str | None:
+        """The user's chosen voice, or None for the default (see bot/style.py)."""
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT style FROM users WHERE user_id=?", (user_id,)
+            ).fetchone()
+            return row["style"] if row else None
+
+    def set_style(self, user_id: int, style: str) -> None:
+        with self._lock:
+            self.conn.execute("UPDATE users SET style=? WHERE user_id=?", (style, user_id))
             self.conn.commit()
 
     # --- reminder settings / scheduling ----------------------------------

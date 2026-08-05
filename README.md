@@ -14,6 +14,9 @@ sober, concrete explanation of the situation as the cards describe it.
 - **Brief by default** — readings are a tight paragraph; an "expand this reading"
   button gives the full, detailed version of *any* reading (spread, future, or
   clarifying cards).
+- **Four voices** (`/settings`) — fortune-teller (the default esoteric register),
+  psychologist, logician, or blunt mate. The voice changes; the premise does not
+  — every style reads the present and still refuses to predict.
 - **Daily reminder** — an offer to draw, at an hour you choose in your own time
   zone (`/settings`). Turn it off and you still get one silent nudge a week.
 - **The reader remembers you.** A reading is given your own recent spreads and
@@ -102,8 +105,8 @@ every push and pull request.
 
 - **Core (aiogram/Pillow/network-free, unit-tested):** `bot/deck.py`,
   `bot/card_names.py`, `bot/daily.py`, `bot/db.py`, `bot/i18n.py`,
-  `bot/memory.py`, `bot/pricing.py`, `bot/config.py`, and the prompt-building
-  functions in `bot/interpret.py`.
+  `bot/memory.py`, `bot/pricing.py`, `bot/style.py`, `bot/config.py`, and the
+  prompt-building functions in `bot/interpret.py`.
 - **Thin layer (not unit-tested):** `bot/handlers/`, `bot/service.py`,
   `bot/cards_render.py`, `bot/keyboards.py`, `main.py`, and the `Interpreter`
   class (the Claude IO boundary).
