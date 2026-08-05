@@ -158,6 +158,16 @@ python tools/generate_cards.py  # regenerate the 78 card images
   text**. Same privacy rule as `/history`: `recent_readings` is user-scoped in
   SQL — one querent's history must never reach another's prompt
   (`test_memory.py` guards this).
+- **`render.thinking()` wraps ONLY the generation call.** It posts the
+  "composing your reading…" placeholder *and* starts a task that re-sends the
+  `typing` chat action every `TYPING_REFRESH` (4s) — Telegram drops the
+  indicator after ~5s, and a reading takes 20s–2min, so a single action would
+  leave the chat looking dead. Both are torn down in `finally`, so the result
+  must be sent *after* the block. Chat actions go through `render.send_action`,
+  which swallows everything: the indicator is decoration and must never take a
+  delivery down (nor break on the tests' bot-less fake messages).
+  `send_cards_photo` sets `upload_photo` for the compositing/upload beat that
+  follows the block. Guarded in `test_split_text.py`.
 - **`/history` is a per-user archive; every query is user-scoped in SQL.**
   `handlers/history.py` shows a month calendar (`keyboards.calendar_keyboard`,
   callbacks `hist:nav:YYYY-MM` / `hist:day:YYYY-MM-DD` / `hist:show:<id>` /

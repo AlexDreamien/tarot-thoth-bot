@@ -19,6 +19,12 @@ from ..keyboards import offers_keyboard
 # answer_long().
 TG_LIMIT = 3900
 
+# Telegram drops the "typing…" indicator about five seconds after it is set, so
+# it has to be re-sent for as long as the model is working — a reading takes
+# anywhere from twenty seconds to two minutes. Refresh slightly early so the
+# indicator never visibly blinks out between actions.
+TYPING_REFRESH = 4.0
+
 
 def split_text(text: str, limit: int = TG_LIMIT) -> list[str]:
     """Split text into Telegram-sized chunks, preferring paragraph, then line,
@@ -68,21 +74,44 @@ async def answer_long(message: Message, text: str, header: str | None = None) ->
         await message.answer(chunk)
 
 
+async def send_action(message: Message, action: str) -> None:
+    """Set a chat action ("typing…", "sending photo…").
+
+    Best-effort by design: the indicator is decoration, and a failed action —
+    or a message object that carries no bot, as in the unit tests — must never
+    take a reading down with it.
+    """
+    with suppress(Exception):
+        await message.bot.send_chat_action(chat_id=message.chat.id, action=action)
+
+
+async def _keep_typing(message: Message) -> None:
+    """Hold the "typing…" indicator up until cancelled."""
+    while True:
+        await send_action(message, "typing")
+        await asyncio.sleep(TYPING_REFRESH)
+
+
 @asynccontextmanager
 async def thinking(message: Message, lang: str):
-    """Show a "composing your reading…" placeholder while the model works, then
-    delete it just before the result is sent.
+    """Show a "composing your reading…" placeholder and a live "typing…"
+    indicator while the model works, then clear both just before the result.
 
-    Generation can take a minute or two; a chat action only lasts ~5s, so
-    without this the bot looks silently stuck. Wrap ONLY the generation call —
-    the placeholder is removed on exit, so send the result after the block.
+    Generation can take a minute or two. A chat action expires after ~5s, so it
+    is re-sent on a loop for the whole wait; the placeholder message says what
+    is being waited for. Wrap ONLY the generation call — both are torn down on
+    exit, so send the result after the block.
     """
     note = None
     with suppress(Exception):
         note = await message.answer(t(lang, "generating"))
+    typing = asyncio.create_task(_keep_typing(message))
     try:
         yield
     finally:
+        typing.cancel()
+        with suppress(asyncio.CancelledError, Exception):
+            await typing
         if note is not None:
             with suppress(Exception):  # already deleted / too old / no rights
                 await note.delete()
@@ -93,6 +122,9 @@ def cards_line(lang: str, card_ids: list[str]) -> str:
 
 
 async def send_cards_photo(message: Message, card_ids: list[str], caption: str) -> None:
+    # Compositing and uploading takes a beat, right after the "typing…" loop has
+    # stopped — without this the chat goes quiet again at the last moment.
+    await send_action(message, "upload_photo")
     png = await asyncio.to_thread(cards_render.compose, card_ids)
     await message.answer_photo(BufferedInputFile(png, filename="spread.png"), caption=caption)
 

@@ -2,6 +2,7 @@ import asyncio
 
 import pytest
 
+from bot.handlers import render
 from bot.handlers.render import TG_LIMIT, answer_long, split_text
 
 
@@ -58,6 +59,86 @@ def test_thinking_removes_placeholder_even_when_generation_fails():
     with pytest.raises(RuntimeError):
         asyncio.run(run())
     assert deleted == [True]
+
+
+# --- the "typing…" indicator --------------------------------------------
+
+
+class _TypingBot:
+    def __init__(self, fail=False):
+        self.actions: list[tuple[int, str]] = []
+        self.fail = fail
+
+    async def send_chat_action(self, chat_id, action):
+        self.actions.append((chat_id, action))
+        if self.fail:
+            raise RuntimeError("network blip")
+
+
+class _TypingMessage:
+    """A message that can carry chat actions, unlike the minimal fakes above."""
+
+    class _Chat:
+        id = 555
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.chat = self._Chat()
+
+    async def answer(self, text, **kw):
+        class _Note:
+            async def delete(self):
+                pass
+
+        return _Note()
+
+
+def test_typing_is_re_sent_for_as_long_as_the_model_works(monkeypatch):
+    # Telegram clears the indicator after ~5s, so a single action would leave
+    # the chat looking dead through most of a two-minute generation.
+    monkeypatch.setattr(render, "TYPING_REFRESH", 0.01)
+    bot = _TypingBot()
+
+    async def scenario():
+        async with render.thinking(_TypingMessage(bot), "ru"):
+            await asyncio.sleep(0.08)  # a slow reading
+        during = len(bot.actions)
+        await asyncio.sleep(0.05)  # ...and once the reading is ready
+        return during, len(bot.actions)
+
+    during, after = asyncio.run(scenario())
+    assert during >= 3, "the indicator was set once and left to expire"
+    assert {a for _, a in bot.actions} == {"typing"}
+    assert all(chat_id == 555 for chat_id, _ in bot.actions)
+    assert during == after, "the indicator kept running after delivery"
+
+
+def test_a_failing_chat_action_never_costs_the_reading(monkeypatch):
+    monkeypatch.setattr(render, "TYPING_REFRESH", 0.01)
+    bot = _TypingBot(fail=True)
+    finished = []
+
+    async def scenario():
+        async with render.thinking(_TypingMessage(bot), "ru"):
+            await asyncio.sleep(0.03)
+            finished.append(True)
+
+    asyncio.run(scenario())
+    assert finished == [True]
+    assert bot.actions, "it should keep trying rather than give up"
+
+
+def test_the_photo_upload_announces_itself():
+    bot = _TypingBot()
+    msg = _TypingMessage(bot)
+    msg.answer_photo = lambda *a, **kw: asyncio.sleep(0)
+    asyncio.run(render.send_cards_photo(msg, ["major_00"], "caption"))
+    assert ("upload_photo") in [a for _, a in bot.actions]
+
+
+def test_a_message_without_a_bot_is_tolerated():
+    # The minimal fakes elsewhere in this file have no .bot/.chat at all.
+    asyncio.run(render.send_action(_FakeMessage(), "typing"))
 
 
 def test_generated_text_is_html_escaped_but_header_is_not():
