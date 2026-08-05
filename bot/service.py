@@ -105,10 +105,15 @@ async def ensure_context_spread(
     return await _ensure_interpretation(db, interp, row, lang, kind="context")
 
 
-async def user_style(db: Database, user_id: int) -> str:
-    """The querent's chosen voice (``bot/style.py``), defaulting for NULL or an
-    unknown code — a style dropped from ``STYLES`` must not break old rows."""
-    return style_mod.normalize(await asyncio.to_thread(db.get_style, user_id))
+async def user_persona(db: Database, user_id: int) -> style_mod.Persona:
+    """How to speak to this querent: chosen voice, gender, name.
+
+    Every field degrades to its default on NULL or an unrecognised value — the
+    rows on the Fly volume predate all three columns, and a code dropped in a
+    later version must not strand them. Unknown gender means *genderless*, not
+    masculine.
+    """
+    return style_mod.Persona.from_row(await asyncio.to_thread(db.get_user, user_id))
 
 
 async def memory_block(db: Database, *, row: sqlite3.Row, lang: str) -> str | None:
@@ -134,11 +139,11 @@ async def _ensure_interpretation(
         return row, row["interpretation"]
     cards = split_cards(row["card_ids"])
     mem = await memory_block(db, row=row, lang=lang)
-    voice = await user_style(db, row["user_id"])
+    who = await user_persona(db, row["user_id"])
     if kind == "context":
-        text = await interp.context(cards, row["situation"], lang, mem, voice)
+        text = await interp.context(cards, row["situation"], lang, mem, who)
     else:
-        text = await interp.daily(cards, lang, mem, voice)
+        text = await interp.daily(cards, lang, mem, who)
     await asyncio.to_thread(db.set_interpretation, row["id"], text)
     return await asyncio.to_thread(db.get_spread, row["id"]), text
 
@@ -148,10 +153,8 @@ async def ensure_future(db: Database, interp: Interpreter, *, spread_id: int, la
     row = await asyncio.to_thread(db.get_spread, spread_id)
     if row["future_text"]:
         return row["future_text"]
-    voice = await user_style(db, row["user_id"])
-    text = await interp.future(
-        split_cards(row["card_ids"]), row["interpretation"] or "", lang, voice
-    )
+    who = await user_persona(db, row["user_id"])
+    text = await interp.future(split_cards(row["card_ids"]), row["interpretation"] or "", lang, who)
     await asyncio.to_thread(db.set_future, spread_id, text)
     return text
 
@@ -177,7 +180,7 @@ async def ensure_spread_expanded(
         row["interpretation"],
         lang,
         memory=bool(mem),
-        style=await user_style(db, row["user_id"]),
+        persona=await user_persona(db, row["user_id"]),
     )
     await asyncio.to_thread(db.set_spread_long, spread_id, text)
     return text
@@ -201,7 +204,7 @@ async def ensure_future_expanded(
         row["future_text"],
         lang,
         future=True,
-        style=await user_style(db, row["user_id"]),
+        persona=await user_persona(db, row["user_id"]),
     )
     await asyncio.to_thread(db.set_future_long, spread_id, text)
     return text
@@ -225,7 +228,7 @@ async def ensure_extra_expanded(
         lang,
     )
     text = await interp.expand(
-        context_block, extra["interpretation"], lang, style=await user_style(db, row["user_id"])
+        context_block, extra["interpretation"], lang, persona=await user_persona(db, row["user_id"])
     )
     await asyncio.to_thread(db.set_extra_long, extra_id, text)
     return text
@@ -256,7 +259,7 @@ async def ensure_extra(
         row["interpretation"] or "",
         extra_cards,
         lang,
-        await user_style(db, row["user_id"]),
+        await user_persona(db, row["user_id"]),
     )
     await asyncio.to_thread(db.set_extra_interpretation, extra["id"], text)
     return extra["id"], extra_cards, text

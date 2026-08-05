@@ -1,4 +1,5 @@
-"""/settings — the daily-reminder preferences: hour, UTC offset, on/off.
+"""/settings — every preference: reminder hour, UTC offset, on/off, the voice of
+the readings, how the querent is addressed, and the language.
 
 Telegram does not expose a user's time zone, so the user picks their UTC offset
 here; the scheduler uses it to fire at their local hour. With reminders off the
@@ -11,6 +12,8 @@ import asyncio
 
 from aiogram import F, Router
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 
 from .. import style as style_mod
@@ -19,6 +22,8 @@ from ..db import Database
 from ..i18n import t
 from ..keyboards import (
     _fmt_offset,
+    address_keyboard,
+    gender_name,
     hours_keyboard,
     lang_keyboard,
     settings_keyboard,
@@ -26,9 +31,13 @@ from ..keyboards import (
     style_name,
     tz_keyboard,
 )
-from ..service import get_lang, user_style
+from ..service import get_lang, user_persona
 
 router = Router()
+
+
+class NameFlow(StatesGroup):
+    waiting_name = State()
 
 
 def _state_text(lang: str, hour: int | None, offset_min: int) -> str:
@@ -44,7 +53,7 @@ async def _show(
     hour = user["reminder_hour"] if user else None
     offset = (user["tz_offset_min"] if user else None) or 0
     text = t(lang, "settings_title", state=_state_text(lang, hour, offset))
-    kb = settings_keyboard(lang, hour, offset, await user_style(db, user_id))
+    kb = settings_keyboard(lang, hour, offset, style_mod.Persona.from_row(user))
     if edit:
         await message.edit_text(text, reply_markup=kb)
     else:
@@ -79,6 +88,82 @@ async def cb_pick_tz(callback: CallbackQuery, db: Database, cfg: Config) -> None
         await callback.message.answer(t(lang, "pick_tz"), reply_markup=tz_keyboard())
 
 
+async def _show_address(message: Message, db: Database, lang: str, user_id: int) -> None:
+    who = await user_persona(db, user_id)
+    await message.answer(
+        t(
+            lang,
+            "address_title",
+            gender=gender_name(lang, who.gender),
+            name=who.name or t(lang, "address_unset"),
+        ),
+        reply_markup=address_keyboard(lang, who),
+    )
+
+
+@router.callback_query(F.data == "set:address")
+async def cb_address(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await _show_address(callback.message, db, lang, callback.from_user.id)
+
+
+@router.callback_query(F.data.startswith("set:gender:"))
+async def cb_set_gender(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    """ "none" clears it — which means genderless readings, not masculine ones."""
+    if callback.from_user is None or callback.data is None:
+        return
+    gender = style_mod.normalize_gender(callback.data.split(":")[2])
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await asyncio.to_thread(db.set_gender, callback.from_user.id, gender)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await _show_address(callback.message, db, lang, callback.from_user.id)
+
+
+@router.callback_query(F.data == "set:name:clear")
+async def cb_clear_name(callback: CallbackQuery, db: Database, cfg: Config) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await asyncio.to_thread(db.set_display_name, callback.from_user.id, None)
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.answer(t(lang, "name_cleared"))
+
+
+@router.callback_query(F.data == "set:name")
+async def cb_ask_name(
+    callback: CallbackQuery, db: Database, cfg: Config, state: FSMContext
+) -> None:
+    if callback.from_user is None:
+        return
+    lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
+    await callback.answer()
+    await state.set_state(NameFlow.waiting_name)
+    if isinstance(callback.message, Message):
+        await callback.message.answer(t(lang, "name_prompt"))
+
+
+@router.message(NameFlow.waiting_name, F.text)
+async def on_name(message: Message, db: Database, cfg: Config, state: FSMContext) -> None:
+    """The name is interpolated into the system prompt, so it is sanitised to one
+    short line first — see ``style.clean_name``."""
+    if message.from_user is None or message.text is None:
+        return
+    lang = await get_lang(db, message.from_user.id, cfg.default_lang)
+    name = style_mod.clean_name(message.text)
+    if not name:
+        await message.answer(t(lang, "name_too_odd"))
+        return
+    await state.clear()
+    await asyncio.to_thread(db.set_display_name, message.from_user.id, name)
+    await message.answer(t(lang, "name_saved", name=name))
+
+
 @router.callback_query(F.data == "set:lang")
 async def cb_pick_lang(callback: CallbackQuery, db: Database, cfg: Config) -> None:
     """The language picker now lives in /settings; the `lang:<code>` callbacks
@@ -96,7 +181,7 @@ async def cb_pick_style(callback: CallbackQuery, db: Database, cfg: Config) -> N
     if callback.from_user is None:
         return
     lang = await get_lang(db, callback.from_user.id, cfg.default_lang)
-    current = await user_style(db, callback.from_user.id)
+    current = (await user_persona(db, callback.from_user.id)).style
     await callback.answer()
     if isinstance(callback.message, Message):
         await callback.message.answer(

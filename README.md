@@ -17,6 +17,9 @@ sober, concrete explanation of the situation as the cards describe it.
 - **Four voices** (`/settings`) — fortune-teller (the default esoteric register),
   psychologist, logician, or blunt mate. The voice changes; the premise does not
   — every style reads the present and still refuses to predict.
+- **Addressed how you like** (`/settings`) — set a gender and the readings agree
+  with it; set a name and you'll be called by it now and then. Set neither and
+  they're written without gendered wording rather than guessing.
 - **Daily reminder** — an offer to draw, at an hour you choose in your own time
   zone (`/settings`). Turn it off and you still get one silent nudge a week.
 - **The reader remembers you.** A reading is given your own recent spreads and

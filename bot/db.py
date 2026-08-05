@@ -101,6 +101,12 @@ class Database:
         # Voice of the readings (bot/style.py). NULL == the default persona,
         # which is what every user predating this column gets.
         self._add_column("users", "style", "TEXT")
+        # How to address them. NULL gender == unknown, and readings then avoid
+        # gendered agreement rather than guessing. display_name is what the user
+        # asked to be called — distinct from `name`, the Telegram full name we
+        # capture for the admin exports.
+        self._add_column("users", "gender", "TEXT")
+        self._add_column("users", "display_name", "TEXT")
         # Expanded ("tell me more") interpretations, generated on demand.
         self._add_column("spreads", "long_text", "TEXT")
         self._add_column("spreads", "future_long_text", "TEXT")
@@ -158,6 +164,18 @@ class Database:
     def set_style(self, user_id: int, style: str) -> None:
         with self._lock:
             self.conn.execute("UPDATE users SET style=? WHERE user_id=?", (style, user_id))
+            self.conn.commit()
+
+    def set_gender(self, user_id: int, gender: str | None) -> None:
+        """``None`` clears it back to unknown — a genderless reading."""
+        with self._lock:
+            self.conn.execute("UPDATE users SET gender=? WHERE user_id=?", (gender, user_id))
+            self.conn.commit()
+
+    def set_display_name(self, user_id: int, name: str | None) -> None:
+        """What the querent asked to be called; ``None`` clears it."""
+        with self._lock:
+            self.conn.execute("UPDATE users SET display_name=? WHERE user_id=?", (name, user_id))
             self.conn.commit()
 
     # --- reminder settings / scheduling ----------------------------------

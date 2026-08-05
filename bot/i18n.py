@@ -62,6 +62,24 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_time": "🕘 Reminder time",
         "btn_set_tz": "🌍 Time zone (now UTC{offset})",
         "btn_set_lang": "🌐 Language: {name}",
+        "btn_set_address": "🙋 How to address you: {summary}",
+        "address_title": (
+            "🙋 <b>How should I address you?</b>\n\n"
+            "Gender: {gender}\nName: {name}\n\n"
+            "With no gender set I'll write to you without gendered wording."
+        ),
+        "address_unset": "not set",
+        "gender_m": "male",
+        "gender_f": "female",
+        "btn_gender_m": "♂ Male",
+        "btn_gender_f": "♀ Female",
+        "btn_gender_none": "🚫 Don't specify",
+        "btn_set_name": "✏️ Set a name",
+        "btn_clear_name": "🧹 Forget my name",
+        "name_prompt": "Send the name you'd like me to use. /cancel to abort.",
+        "name_saved": "✅ I'll call you {name}.",
+        "name_cleared": "✅ I won't use a name.",
+        "name_too_odd": "That doesn't look like a name — send a short one, please.",
         "btn_set_style": "🎭 Voice: {style}",
         "pick_style": "Pick the voice of your readings:",
         "style_saved": "✅ Voice: {style}",
@@ -153,6 +171,24 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_time": "🕘 Время напоминания",
         "btn_set_tz": "🌍 Часовой пояс (сейчас UTC{offset})",
         "btn_set_lang": "🌐 Язык: {name}",
+        "btn_set_address": "🙋 Обращение: {summary}",
+        "address_title": (
+            "🙋 <b>Как к тебе обращаться?</b>\n\n"
+            "Пол: {gender}\nИмя: {name}\n\n"
+            "Если пол не указан, буду писать без родовых окончаний."
+        ),
+        "address_unset": "не указано",
+        "gender_m": "мужской",
+        "gender_f": "женский",
+        "btn_gender_m": "♂ Мужской",
+        "btn_gender_f": "♀ Женский",
+        "btn_gender_none": "🚫 Не указывать",
+        "btn_set_name": "✏️ Задать имя",
+        "btn_clear_name": "🧹 Забыть имя",
+        "name_prompt": "Пришли имя, которым тебя называть. /cancel — отмена.",
+        "name_saved": "✅ Буду обращаться: {name}.",
+        "name_cleared": "✅ Имя больше не использую.",
+        "name_too_odd": "Это не похоже на имя — пришли что-нибудь покороче.",
         "btn_set_style": "🎭 Стиль: {style}",
         "pick_style": "Выбери стиль толкований:",
         "style_saved": "✅ Стиль: {style}",
@@ -244,6 +280,24 @@ _STRINGS: dict[str, dict[str, str]] = {
         "btn_set_time": "🕘 Час нагадування",
         "btn_set_tz": "🌍 Часовий пояс (зараз UTC{offset})",
         "btn_set_lang": "🌐 Мова: {name}",
+        "btn_set_address": "🙋 Звертання: {summary}",
+        "address_title": (
+            "🙋 <b>Як до тебе звертатися?</b>\n\n"
+            "Стать: {gender}\nІм'я: {name}\n\n"
+            "Якщо стать не вказана, писатиму без родових закінчень."
+        ),
+        "address_unset": "не вказано",
+        "gender_m": "чоловіча",
+        "gender_f": "жіноча",
+        "btn_gender_m": "♂ Чоловіча",
+        "btn_gender_f": "♀ Жіноча",
+        "btn_gender_none": "🚫 Не вказувати",
+        "btn_set_name": "✏️ Задати ім'я",
+        "btn_clear_name": "🧹 Забути ім'я",
+        "name_prompt": "Надішли ім'я, яким тебе називати. /cancel — скасувати.",
+        "name_saved": "✅ Звертатимусь: {name}.",
+        "name_cleared": "✅ Ім'я більше не використовую.",
+        "name_too_odd": "Це не схоже на ім'я — надішли щось коротше.",
         "btn_set_style": "🎭 Стиль: {style}",
         "pick_style": "Обери стиль тлумачень:",
         "style_saved": "✅ Стиль: {style}",

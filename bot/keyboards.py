@@ -100,6 +100,37 @@ def style_name(lang: str, code: str) -> str:
     return t(lang, f"style_{code}")
 
 
+def gender_name(lang: str, gender: str | None) -> str:
+    return t(lang, f"gender_{gender}") if gender else t(lang, "address_unset")
+
+
+def address_summary(lang: str, persona: style_mod.Persona) -> str:
+    """What the /settings button shows: the name if there is one, else the
+    gender, else "not set"."""
+    if persona.name:
+        return persona.name
+    return gender_name(lang, persona.gender)
+
+
+def address_keyboard(lang: str, persona: style_mod.Persona) -> InlineKeyboardMarkup:
+    """Gender (the active one ticked) plus setting or clearing the name."""
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=("✅ " if persona.gender == code else "") + t(lang, f"btn_gender_{key}"),
+                callback_data=f"set:gender:{code or 'none'}",
+            )
+        ]
+        for code, key in ((style_mod.MALE, "m"), (style_mod.FEMALE, "f"), (None, "none"))
+    ]
+    rows.append([InlineKeyboardButton(text=t(lang, "btn_set_name"), callback_data="set:name")])
+    if persona.name:
+        rows.append(
+            [InlineKeyboardButton(text=t(lang, "btn_clear_name"), callback_data="set:name:clear")]
+        )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 def style_keyboard(lang: str, current: str) -> InlineKeyboardMarkup:
     """One button per voice; the active one is ticked. Names only — the styles
     are meant to be tried, not read about."""
@@ -117,8 +148,12 @@ def style_keyboard(lang: str, current: str) -> InlineKeyboardMarkup:
 
 
 def settings_keyboard(
-    lang: str, hour: int | None, offset_min: int, style: str = style_mod.DEFAULT
+    lang: str,
+    hour: int | None,
+    offset_min: int,
+    persona: style_mod.Persona | None = None,
 ) -> InlineKeyboardMarkup:
+    who = persona or style_mod.Persona()
     rows = [
         [InlineKeyboardButton(text=t(lang, "btn_set_time"), callback_data="set:hour")],
         [
@@ -129,8 +164,14 @@ def settings_keyboard(
         ],
         [
             InlineKeyboardButton(
-                text=t(lang, "btn_set_style", style=style_name(lang, style)),
+                text=t(lang, "btn_set_style", style=style_name(lang, who.style)),
                 callback_data="set:style",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t(lang, "btn_set_address", summary=address_summary(lang, who)),
+                callback_data="set:address",
             )
         ],
         [
