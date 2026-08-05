@@ -82,7 +82,7 @@ missing at runtime, the card is drawn on the fly by the same renderer.
 ## Exporting a user's readings
 
 ```bash
-python tools/export_readings.py --list                 # who's in the database
+python tools/export_readings.py --list                 # who's in the database, and their settings
 python tools/export_readings.py 123456789              # full history
 python tools/export_readings.py 123456789 --from 2026-08-01 --to 2026-08-31
 ```

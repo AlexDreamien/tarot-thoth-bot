@@ -155,13 +155,51 @@ def _section(title: str, body: str | None) -> list[str]:
     return [f"--- {title} ---", body.strip(), ""] if body and body.strip() else []
 
 
+GENDER_LABEL = {"m": "м", "f": "ж"}
+
+
+def _clip(text: object, width: int) -> str:
+    """One line, at most ``width`` characters, em-dash for nothing."""
+    if not text:
+        return "—"
+    flat = " ".join(str(text).split())
+    return flat if len(flat) <= width else flat[: width - 1] + "…"
+
+
 def list_users(conn: sqlite3.Connection) -> None:
-    rows = conn.execute("""SELECT u.user_id, u.name, u.lang, u.created_at,
-                  (SELECT COUNT(*) FROM spreads s WHERE s.user_id = u.user_id) AS n
-           FROM users u ORDER BY n DESC, u.user_id""").fetchall()
-    print(f"{'user_id':>12}  {'readings':>8}  {'lang':<4}  name")
+    """Who is in the database, with the preferences they've set.
+
+    The persona columns arrived over several deploys, so an older copy of the
+    database (``--db`` at a backup, or ``--no-fetch`` on a stale file) is still
+    listed rather than crashing on a missing column.
+    """
+    have = {r[1] for r in conn.execute("PRAGMA table_info(users)")}
+
+    def col(name: str) -> str:
+        return f"u.{name}" if name in have else "NULL"
+
+    rows = conn.execute(f"""
+        SELECT u.user_id, u.name, u.lang,
+               {col("display_name")} AS display_name,
+               {col("gender")} AS gender,
+               {col("bio")} AS bio,
+               (SELECT COUNT(*) FROM spreads s WHERE s.user_id = u.user_id) AS n,
+               (SELECT MAX(day) FROM spreads s WHERE s.user_id = u.user_id) AS last_day
+          FROM users u ORDER BY n DESC, u.user_id
+    """).fetchall()
+
+    head = (
+        f"{'user_id':>12}  {'раскл':>5}  {'последний':<10}  {'яз':<3}  {'пол':<3}  "
+        f"{'обращение':<14}  {'имя в Telegram':<18}  о себе"
+    )
+    print(head)
+    print("-" * len(head))
     for r in rows:
-        print(f"{r['user_id']:>12}  {r['n']:>8}  {r['lang']:<4}  {r['name'] or ''}")
+        print(
+            f"{r['user_id']:>12}  {r['n']:>5}  {r['last_day'] or '—':<10}  {r['lang']:<3}  "
+            f"{GENDER_LABEL.get(r['gender'], '—'):<3}  {_clip(r['display_name'], 14):<14}  "
+            f"{_clip(r['name'], 18):<18}  {_clip(r['bio'], 46)}"
+        )
 
 
 def export(
