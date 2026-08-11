@@ -22,6 +22,16 @@ _LANG_INSTRUCTION = {
     "en": "English",
 }
 
+# "Querent" is the vocabulary of these prompts, not of the reading. Left unsaid,
+# the model writes the English word straight into a Russian text — an expanded
+# reading came back saying «процесс, который несёт querent».
+_NO_JARGON = (
+    "«Querent» is my word here for the person you are reading for — it is not a "
+    "word they ever see. Never write it, translate it or transliterate it in your "
+    "answer, and do not replace it with a label of your own: address them directly, "
+    "in the second person. "
+)
+
 _BASE = (
     "You are an experienced reader of the Thoth Tarot (Crowley–Harris deck). "
     "You interpret a spread as a picture of the querent's CURRENT disposition — "
@@ -31,7 +41,7 @@ _BASE = (
     "reading in the Thoth meaning of the specific cards drawn. "
     "Write in {lang}. Refer to the cards by their names in that language. "
     "Answer directly with the interpretation — no preamble, no thinking aloud, "
-    "no bullet-point disclaimers. "
+    "no bullet-point disclaimers. " + _NO_JARGON
 )
 
 # Default voice: short. The querent can pay/tap to expand, so the first read
@@ -128,7 +138,7 @@ _FUTURE_BASE = (
     "AHEAD: given the spread already laid, describe the likely trajectory and "
     "where these forces are heading. Stay grounded in the Thoth meanings of the "
     "cards; be concrete, not vague or grandiose. "
-    "Write in {lang}. Answer directly, no preamble. "
+    "Write in {lang}. Answer directly, no preamble. " + _NO_JARGON
 )
 
 

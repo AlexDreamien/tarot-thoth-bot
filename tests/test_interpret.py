@@ -8,6 +8,15 @@ def test_system_prompt_enforces_no_prediction():
     assert "русском" in sys
 
 
+def test_prompts_forbid_writing_the_word_querent_in_the_answer():
+    # It leaked once: an expanded Russian reading came back saying «процесс,
+    # который несёт querent». Both prompts must rule the word out.
+    for sys in (interpret.system_prompt("ru"), interpret.future_system_prompt("ru")):
+        low = sys.lower()
+        assert "never write it" in low
+        assert "second person" in low
+
+
 def test_future_system_prompt_is_forward_looking():
     sys = interpret.future_system_prompt("en")
     assert "ahead" in sys.lower()
