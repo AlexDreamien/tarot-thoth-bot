@@ -121,6 +121,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "settings_saved": "✅ Saved: {state}",
         "reminder_msg": "🌅 Good morning! Your Thoth reading for today is ready to be drawn.",
         "weekly_msg": "🔮 It's been a while — want a reading? Reminders are off; /settings to change.",
+        "bio_hint": (
+            "📝 A few lines about yourself and the readings get noticeably more personal — "
+            "the cards are then read against your life, not against nobody in particular."
+        ),
         "context_prompt": (
             "✍️ Describe the situation in a message, and I'll lay a fresh three-card "
             "spread read specifically for it. Send /cancel to abort."
@@ -257,6 +261,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "settings_saved": "✅ Сохранено: {state}",
         "reminder_msg": "🌅 Доброе утро! Расклад Таро Тота на сегодня ждёт тебя.",
         "weekly_msg": "🔮 Давно не виделись — сделаем расклад? Напоминания выключены, /settings — изменить.",
+        "bio_hint": (
+            "📝 Пара строк о себе — и толкования станут заметно личнее: карты будут "
+            "читаться под твою жизнь, а не в пустоту."
+        ),
         "context_prompt": (
             "✍️ Опиши ситуацию в сообщении — я сделаю отдельный расклад из трёх карт "
             "именно под неё. /cancel — отменить."
@@ -393,6 +401,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "settings_saved": "✅ Збережено: {state}",
         "reminder_msg": "🌅 Доброго ранку! Розклад Таро Тота на сьогодні чекає на тебе.",
         "weekly_msg": "🔮 Давно не бачились — зробимо розклад? Нагадування вимкнені, /settings — змінити.",
+        "bio_hint": (
+            "📝 Кілька рядків про себе — і тлумачення стануть помітно особистішими: карти "
+            "читатимуться під твоє життя, а не в порожнечу."
+        ),
         "context_prompt": (
             "✍️ Опиши ситуацію в повідомленні — я зроблю окремий розклад із трьох карт "
             "саме під неї. /cancel — скасувати."

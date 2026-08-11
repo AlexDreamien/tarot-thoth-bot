@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
-from bot.scheduler import due_reminders, local_now
+from bot.keyboards import newday_keyboard
+from bot.scheduler import bio_hint_due, due_reminders, local_now
 
 TZ = "Europe/Kyiv"
 
@@ -54,3 +55,29 @@ def test_reminders_off_get_a_silent_weekly_nudge():
 def test_off_users_get_nothing_at_the_daily_hour():
     now = datetime(2026, 8, 3, 6, 5, tzinfo=UTC)  # 09:05 Kyiv
     assert due_reminders([_u(1, None, None)], now, TZ) == []
+
+
+def _b(bio=None, last_hint=None):
+    return {"bio": bio, "last_bio_hint_day": last_hint}
+
+
+def test_bio_hint_only_for_a_querent_without_one():
+    assert bio_hint_due(_b(), "2026-08-11") is True
+    assert bio_hint_due(_b(bio="музыкант, 30 лет"), "2026-08-11") is False
+    # a bio of nothing but whitespace is no bio at all
+    assert bio_hint_due(_b(bio="   "), "2026-08-11") is True
+
+
+def test_bio_hint_is_at_most_weekly():
+    assert bio_hint_due(_b(last_hint="2026-08-08"), "2026-08-11") is False  # 3 days ago
+    assert bio_hint_due(_b(last_hint="2026-08-04"), "2026-08-11") is True  # 7 days ago
+    # …and a filled-in bio ends it regardless of when we last asked
+    assert bio_hint_due(_b(bio="x", last_hint="2026-07-01"), "2026-08-11") is False
+
+
+def test_bio_hint_adds_a_second_button_to_the_reminder():
+    plain = newday_keyboard("ru").inline_keyboard
+    hinted = newday_keyboard("ru", bio_hint=True).inline_keyboard
+    assert len(plain) == 1 and len(hinted) == 2
+    assert hinted[0] == plain[0]  # the new-day button stays first
+    assert hinted[1][0].callback_data == "set:bio"

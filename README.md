@@ -24,7 +24,9 @@ sober, concrete explanation of the situation as the cards describe it.
   Every reading is given them to sharpen what the cards are read against; they're
   never recited back at you.
 - **Daily reminder** — an offer to draw, at an hour you choose in your own time
-  zone (`/settings`). Turn it off and you still get one silent nudge a week.
+  zone (`/settings`). Turn it off and you still get one silent nudge a week. If
+  you never filled in "about you", the reminder carries a button to do it —
+  once a week at most, and never again once it's written.
 - **The reader remembers you.** A reading is given your own recent spreads and
   questions, so when a card returns it says so — "the Tower again, three weeks
   after it stood over the same question" — instead of treating every day as the

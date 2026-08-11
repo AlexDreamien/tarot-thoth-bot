@@ -39,6 +39,12 @@ python tools/generate_cards.py  # regenerate the 78 card images
   prediction. Only the paid `future` add-on uses `future_system_prompt`. Don't
   blur the two — it's the product's premise (`test_interpret.py` guards the
   prompt text).
+- **The word "querent" must never reach the querent.** It's the prompts' own
+  vocabulary (`_BASE`, `_FUTURE_BASE`, every `build_*_user`), and left unsaid the
+  model writes it verbatim into a Russian reading — a real expansion came back
+  saying «процесс, который несёт querent». `interpret._NO_JARGON` is appended to
+  both system prompts: never write/translate/transliterate it, no substitute
+  label, address them in the second person. `test_interpret.py` guards it.
 - **A spread is fixed per (user, day).** `deck.draw(scope_key, 3)` is
   deterministic (seeded via SHA-256, independent of `PYTHONHASHSEED`), and
   `db.get_or_create_spread` uses `INSERT OR IGNORE` on a UNIQUE `scope_key`. The
@@ -140,6 +146,17 @@ python tools/generate_cards.py  # regenerate the 78 card images
   `last_reminder_day` / `last_weekly_day` make it at most once per local day/week,
   and a user who already drew today gets no ping. Never pass `next_run_time=None`
   to `add_job` — that adds the job **paused** and nothing ever fires.
+  - **A reminder to a querent with no `bio` carries the invitation to write
+    one** — `scheduler.bio_hint_due` (pure, tested; takes the local day as a
+    day-key, never a clock) says when: no bio, and not asked within
+    `BIO_HINT_DAYS` (7). It appends `i18n.bio_hint` to the message and a second
+    button to `newday_keyboard(lang, bio_hint=True)` — the existing
+    `btn_edit_bio` / `set:bio`, so the tap lands straight in the "write about
+    yourself" prompt rather than a panel. `users.last_bio_hint_day` is stamped
+    **only when a message actually went out** (`db.mark_bio_hint_sent`): a
+    reminder suppressed because they already drew today must not burn the week.
+    Both reminder kinds carry it — a weekly silent nudge is already on the same
+    cadence.
 - **`/settings` is the single preferences panel** — reminder hour, UTC offset,
   voice and language. It is no longer "reminders": keep `settings_title` generic
   when adding a preference, and add the button to `keyboards.settings_keyboard`

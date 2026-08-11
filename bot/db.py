@@ -111,6 +111,9 @@ class Database:
         self._add_column("users", "display_name", "TEXT")
         # Optional self-description, given as background to every reading.
         self._add_column("users", "bio", "TEXT")
+        # When we last invited a bio-less user to write one (a day-key). NULL ==
+        # never asked, so the next reminder carries the invitation.
+        self._add_column("users", "last_bio_hint_day", "TEXT")
         # Premium expiry (a 'YYYY-MM-DD' day-key, inclusive). Adding the column
         # grandfathers in everyone who was already using the bot — it fires once,
         # when the column appears, and is a no-op on a fresh database.
@@ -227,9 +230,12 @@ class Database:
             self.conn.commit()
 
     def all_users_for_scheduling(self) -> list[sqlite3.Row]:
+        """Everything the tick needs: when to ping, and whether the ping should
+        carry the "tell me about yourself" invitation (``bio`` /
+        ``last_bio_hint_day`` — see ``scheduler.bio_hint_due``)."""
         with self._lock:
             return self.conn.execute("""SELECT user_id, lang, reminder_hour, tz_offset_min,
-                          last_reminder_day, last_weekly_day
+                          last_reminder_day, last_weekly_day, bio, last_bio_hint_day
                    FROM users""").fetchall()
 
     def mark_reminder_sent(self, user_id: int, day: str) -> None:
@@ -242,6 +248,15 @@ class Database:
     def mark_weekly_sent(self, user_id: int, day: str) -> None:
         with self._lock:
             self.conn.execute("UPDATE users SET last_weekly_day=? WHERE user_id=?", (day, user_id))
+            self.conn.commit()
+
+    def mark_bio_hint_sent(self, user_id: int, day: str) -> None:
+        """Recorded only when a reminder actually went out carrying the
+        invitation — an unsent nudge must not use up the week."""
+        with self._lock:
+            self.conn.execute(
+                "UPDATE users SET last_bio_hint_day=? WHERE user_id=?", (day, user_id)
+            )
             self.conn.commit()
 
     def has_daily_spread(self, user_id: int, day: str) -> bool:

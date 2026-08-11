@@ -83,11 +83,15 @@ def offers_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def newday_keyboard(lang: str) -> InlineKeyboardMarkup:
-    """Just the "reading for a new day" button — used by reminder messages."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "btn_newday"), callback_data="newday")]]
-    )
+def newday_keyboard(lang: str, bio_hint: bool = False) -> InlineKeyboardMarkup:
+    """Just the "reading for a new day" button — used by reminder messages. With
+    ``bio_hint`` (a querent who never filled in "about you", asked at most once a
+    week — ``scheduler.bio_hint_due``) the invitation to write one is appended;
+    it opens the same prompt as the "about you" panel does."""
+    rows = [[InlineKeyboardButton(text=t(lang, "btn_newday"), callback_data="newday")]]
+    if bio_hint:
+        rows.append([InlineKeyboardButton(text=t(lang, "btn_edit_bio"), callback_data="set:bio")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _fmt_offset(minutes: int) -> str:

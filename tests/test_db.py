@@ -90,6 +90,17 @@ def test_name_stored_and_updated(db):
     assert db.conn.execute("SELECT name FROM users WHERE user_id=1").fetchone()["name"] == "Alice B"
 
 
+def test_scheduling_rows_carry_what_the_bio_hint_needs(db):
+    db.get_or_create_user(1, "ru")
+    row = db.all_users_for_scheduling()[0]
+    assert row["bio"] is None and row["last_bio_hint_day"] is None
+    db.mark_bio_hint_sent(1, "2026-08-11")
+    db.set_bio(1, "музыкант")
+    row = db.all_users_for_scheduling()[0]
+    assert row["last_bio_hint_day"] == "2026-08-11"
+    assert row["bio"] == "музыкант"
+
+
 def test_history_queries_are_per_user(db):
     a = db.get_or_create_spread(
         user_id=1, day="2026-07-20", kind="daily", scope_key="k1", card_ids=["major_00"]
