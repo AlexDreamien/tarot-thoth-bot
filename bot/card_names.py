@@ -157,6 +157,126 @@ _RANK_NAMES = {
 }
 
 
+# Thoth esoteric titles of the small cards, per language, indexed 1..10 — the
+# same order as ``deck._PIP_TITLES``, which holds Crowley's English originals.
+# These go into the *prompt*: given only the English title the model quotes it
+# verbatim in a Russian reading («Девятка Мечей, „Cruelty“, задаёт тон»).
+_PIP_TITLES = {
+    "ru": {
+        "wands": [
+            "Корень Сил Огня",
+            "Господство",
+            "Добродетель",
+            "Завершение",
+            "Раздор",
+            "Победа",
+            "Доблесть",
+            "Быстрота",
+            "Сила",
+            "Угнетение",
+        ],
+        "cups": [
+            "Корень Сил Воды",
+            "Любовь",
+            "Изобилие",
+            "Роскошь",
+            "Разочарование",
+            "Удовольствие",
+            "Разврат",
+            "Праздность",
+            "Счастье",
+            "Пресыщение",
+        ],
+        "swords": [
+            "Корень Сил Воздуха",
+            "Мир",
+            "Печаль",
+            "Перемирие",
+            "Поражение",
+            "Наука",
+            "Тщетность",
+            "Вмешательство",
+            "Жестокость",
+            "Крушение",
+        ],
+        "disks": [
+            "Корень Сил Земли",
+            "Перемена",
+            "Труд",
+            "Власть",
+            "Беспокойство",
+            "Успех",
+            "Неудача",
+            "Благоразумие",
+            "Прибыль",
+            "Богатство",
+        ],
+    },
+    "uk": {
+        "wands": [
+            "Корінь Сил Вогню",
+            "Панування",
+            "Чеснота",
+            "Завершення",
+            "Чвари",
+            "Перемога",
+            "Доблесть",
+            "Швидкість",
+            "Сила",
+            "Гноблення",
+        ],
+        "cups": [
+            "Корінь Сил Води",
+            "Любов",
+            "Достаток",
+            "Розкіш",
+            "Розчарування",
+            "Насолода",
+            "Розпуста",
+            "Лінощі",
+            "Щастя",
+            "Пересичення",
+        ],
+        "swords": [
+            "Корінь Сил Повітря",
+            "Мир",
+            "Скорбота",
+            "Перемир'я",
+            "Поразка",
+            "Наука",
+            "Марність",
+            "Втручання",
+            "Жорстокість",
+            "Крах",
+        ],
+        "disks": [
+            "Корінь Сил Землі",
+            "Зміна",
+            "Праця",
+            "Влада",
+            "Тривога",
+            "Успіх",
+            "Невдача",
+            "Розважливість",
+            "Прибуток",
+            "Багатство",
+        ],
+    },
+}
+
+
+def card_title(card: Card, lang: str) -> str | None:
+    """The card's Thoth title in ``lang``, or None for a card that has none
+    (Majors and courts). English — and any language we have no titles for —
+    falls back to Crowley's original in ``deck.Card.title``."""
+    if not card.title:
+        return None
+    per_suit = _PIP_TITLES.get(lang)
+    if per_suit is None:
+        return card.title
+    return per_suit[card.suit][card.rank - 1]
+
+
 def card_name(card: Card, lang: str) -> str:
     """Localized display name for a card. Falls back to English for an unknown
     language."""

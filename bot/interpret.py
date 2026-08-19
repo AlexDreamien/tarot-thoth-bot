@@ -12,7 +12,7 @@ except the dedicated "future" reading, which is the one paid exception.
 from __future__ import annotations
 
 from . import style as style_mod
-from .card_names import card_name
+from .card_names import card_name, card_title
 from .deck import Card, get_card
 
 # What language Claude should answer in, phrased for the prompt.
@@ -39,7 +39,8 @@ _BASE = (
     "You do NOT predict the future and you do NOT give advice unless asked; you "
     "explain what the cards describe, soberly and concretely, grounding each "
     "reading in the Thoth meaning of the specific cards drawn. "
-    "Write in {lang}. Refer to the cards by their names in that language. "
+    "Write in {lang}. Refer to the cards, and to their Thoth titles, by the "
+    "names given to you in that language — never in English. "
     "Answer directly with the interpretation — no preamble, no thinking aloud, "
     "no bullet-point disclaimers. " + _NO_JARGON
 )
@@ -148,8 +149,11 @@ def _card_brief(card: Card, lang: str) -> str:
     if card.kind == "major":
         return f"- {local} (Atu {card.roman}, «{card.name}»), Major Arcana"
     parts = [f"- {local} («{card.name}»)", f"suit of {card.suit} / {card.element}"]
-    if card.title:
-        parts.append(f"Thoth title: «{card.title}»")
+    title = card_title(card, lang)
+    if title:
+        # Localized: the English title is what the model quoted verbatim into
+        # Russian readings — it can only write what it was given.
+        parts.append(f"Thoth title: «{title}»")
     return ", ".join(parts)
 
 

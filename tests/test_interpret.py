@@ -28,6 +28,14 @@ def test_daily_user_lists_the_cards():
     assert "Dominion" in prompt  # Thoth title of the 2 of Wands
 
 
+def test_thoth_titles_reach_the_prompt_in_the_reading_language():
+    # An English title in the prompt is one the model will quote in Russian:
+    # «Девятка Мечей, „Cruelty“, задаёт тон» is what it actually wrote.
+    prompt = interpret.build_daily_user(["swords_09"], "ru")
+    assert "Жестокость" in prompt
+    assert "Cruelty" not in prompt
+
+
 def test_context_user_includes_situation():
     prompt = interpret.build_context_user(["cups_02"], "смена работы", "ru")
     assert "смена работы" in prompt
