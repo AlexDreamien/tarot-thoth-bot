@@ -28,6 +28,14 @@ def test_daily_user_lists_the_cards():
     assert "Dominion" in prompt  # Thoth title of the 2 of Wands
 
 
+def test_the_title_is_a_gloss_not_the_card_s_name():
+    # Told only to use the localized card names *and titles*, the model started
+    # naming cards by title alone: «„Корень Сил Земли“ — семя нового вложения»,
+    # which no querent can match to the Ace of Disks in the header.
+    sys = interpret.system_prompt("ru").lower()
+    assert "never a replacement for it" in sys
+
+
 def test_thoth_titles_reach_the_prompt_in_the_reading_language():
     # An English title in the prompt is one the model will quote in Russian:
     # «Девятка Мечей, „Cruelty“, задаёт тон» is what it actually wrote.

@@ -45,6 +45,15 @@ python tools/generate_cards.py  # regenerate the 78 card images
   saying «процесс, который несёт querent». `interpret._NO_JARGON` is appended to
   both system prompts: never write/translate/transliterate it, no substitute
   label, address them in the second person. `test_interpret.py` guards it.
+  - Same failure, second form: **Thoth titles reach the prompt localized**
+    (`card_names.card_title`, ru/uk for all 40 pips; `en` and any unknown
+    language fall back to Crowley's original in `deck.Card.title`) — handed only
+    «Cruelty» the model quoted it verbatim into Russian. The *canonical English
+    card name* stays in the prompt on purpose: it pins identity for the model and
+    has never leaked. Titles must stay a **gloss beside the localized name, never
+    a substitute** — the first wording ("name the cards and their titles in that
+    language") made the model write «„Корень Сил Земли“» where the querent
+    expected «Туз Дисков». Card art keeps its English titles: that's the deck.
 - **A spread is fixed per (user, day).** `deck.draw(scope_key, 3)` is
   deterministic (seeded via SHA-256, independent of `PYTHONHASHSEED`), and
   `db.get_or_create_spread` uses `INSERT OR IGNORE` on a UNIQUE `scope_key`. The
